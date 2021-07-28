@@ -1,3 +1,6 @@
+//! DOGS implementation of the Graph Coloring problem
+
+
 // useful additional warnings if docs are missing, or crates imported but unused, etc.
 #![warn(missing_debug_implementations)]
 #![warn(missing_docs)]
@@ -73,6 +76,7 @@ pub fn main() {
     println!("reading instance: {}...", inst_filename);
     let inst = Rc::new(Instance::from_file(inst_filename));
     println!("time limit: {}", t);
+    println!("{:?}", inst);
     // create logger and stopping criterion
     let logger = Rc::new(MetricLogger::default());
     let stopping_criterion = TimeStoppingCriterion::new(t);
