@@ -1,0 +1,5 @@
+c This graph is produced by Sof A. Lee
+c Experiment on graph colouring using phase coupled oscillators
+c Date: 17/02/2008 11:23:56 PM
+p edge 10 19
+e 1 5e 1 9e 1 4e 2 10e 2 7e 2 4e 2 3e 3 10e 3 5e 3 6e 3 4e 3 8e 4 7e 4 5e 4 9e 5 6e 6 8e 7 9e 8 10
