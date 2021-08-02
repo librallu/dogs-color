@@ -1,4 +1,5 @@
-use std::fs::{self, read_link};
+use std::fs;
+use bit_set::BitSet;
 
 use nom::{IResult, error::Error};
 use nom::bytes::complete::take;
@@ -54,14 +55,57 @@ impl Instance {
             }
             Err(_) => false
         } {}
-        assert_eq!(check_nb_edges, m);
-        Self {
-            n,
-            m,
-            adj_list:adj_list,
-        }
+        assert!(check_nb_edges == m || 2*check_nb_edges == m);
+        Self { n, m, adj_list }
     }
 
+    /// print statistics of the instance
+    pub fn print_stats(&self) {
+        println!("\t{} \t vertices", self.n());
+        println!("\t{} \t edges", self.m());
+        let degrees:Vec<usize> = (0..self.n()).map(|i| {
+            self.adj(i).len()
+        }).collect();
+        println!("\t{} \t min degree", degrees.iter().min().unwrap());
+        println!("\t{} \t min degree", degrees.iter().max().unwrap());
+    }
+
+}
+
+/**
+returns None if the solution is infeasible
+returns the objective if the solution is feasible
+*/
+pub fn checker(inst:&Instance, sol:&[Vec<VertexId>]) -> Option<usize> {
+    // check that all vertices are added
+    let mut visited = BitSet::new();
+    for c in sol {
+        for v in c {
+            if visited.contains(*v) {
+                return None;  // already added
+            }
+            visited.insert(*v);
+        }
+    }
+    if visited.len() != inst.n() {
+        return None;
+    }
+    // check conflicts
+    for c in sol {
+        for v1 in c {
+            let mut adj_v1 = BitSet::new();
+            for neigh in inst.adj(*v1) {
+                adj_v1.insert(*neigh);
+            }
+            for v2 in c {
+                if adj_v1.contains(*v2) {
+                    return None;
+                }
+            }
+        }
+    }
+    // if ok: return the number of colors
+    Some(sol.len())
 }
 
 
@@ -97,7 +141,7 @@ fn read_two_integers(s:&str) -> IResult<&str, (usize,usize)> {
                     match nom::character::complete::digit1(remaining2) {
                         Ok((remaining3, s2)) => {
                             let n2 = s2.parse::<usize>().unwrap();
-                            if nom::character::is_newline(remaining3.bytes().nth(0).unwrap()) {
+                            if nom::character::is_newline(*remaining3.as_bytes().get(0).unwrap()) {
                                 match take::<usize, &str, Error<&str>>(usize_1)(remaining3) {
                                     Ok((remaining4,_)) => Ok((remaining4,(n1,n2))),
                                     Err(_) => Ok((remaining3,(n1,n2))),

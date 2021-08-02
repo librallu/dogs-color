@@ -29,21 +29,27 @@
 #[macro_use]
 extern crate clap;
 use clap::App;
+use dogs::search_space::SearchSpace;
 
 use std::rc::Rc;
 use std::cell::RefCell;
 
 use dogs::metric_logger::MetricLogger;
 use dogs::search_algorithm::{SearchAlgorithm, TimeStoppingCriterion};
-use dogs::search_space::{SearchSpace, ToSolution};
+// use dogs::search_space::{SearchSpace, ToSolution};
 use dogs::tree_search::decorators::stats::StatTsDecorator;
-use dogs::tree_search::algo::beam_search::BeamSearch;
+use dogs::tree_search::decorators::pruning::PruningDecorator;
+// use dogs::tree_search::algo::beam_search::BeamSearch;
+use dogs::tree_search::algo::beam_search::create_iterative_beam_search;
+
 
 // register modules
 mod color;
 use color::Instance;
 
-// mod dsatur;
+use crate::dsatur::DSATURSpace;
+
+mod dsatur;
 
 /**
 reads an instance, takes the time limit as a parameter,
@@ -75,26 +81,26 @@ pub fn main() {
     };
     println!("reading instance: {}...", inst_filename);
     let inst = Rc::new(Instance::from_file(inst_filename));
+    inst.print_stats();
+    // println!("{:?}", inst);
     println!("time limit: {}", t);
-    println!("{:?}", inst);
     // create logger and stopping criterion
     let logger = Rc::new(MetricLogger::default());
     let stopping_criterion = TimeStoppingCriterion::new(t);
-    // if main_args.subcommand_matches("localsearch").is_some() {
-    //     println!("generating initial solution...");
-    //     // create search space
-    //     let space = Rc::new(RefCell::new(
-    //         TreeSearchSpace::new(inst)
-    //     ));
-    //     // create the search algorithm
-    //     let mut ts = BeamSearch::new(space.clone(), 1);
-    //     ts.run(stopping_criterion);
-    //     // get the greedy solution
-    //     let mut greedy_node = ts.get_manager().best().clone()
-    //         .expect("fail: no solution found by the greedy");
-    //     let greedy_solution = space.borrow_mut()
-    //         .solution(&mut greedy_node);
-    //     println!("greedy solution ({}): {:?}", greedy_node.cost(), greedy_solution);
-    //     println!("starting local search...");
-    // }
+    if main_args.subcommand_matches("dsatur").is_some() {
+        // create search space
+        let space = Rc::new(RefCell::new(
+            StatTsDecorator::new(
+                PruningDecorator::new(
+                    DSATURSpace::new(inst)
+                )
+            ).bind_logger(Rc::downgrade(&logger)),
+        ));
+        // create the search algorithm
+        logger.display_headers();
+        let mut ts = create_iterative_beam_search(space.clone(), 1., 2.)
+            .bind_logger(Rc::downgrade(&logger));
+        ts.run(stopping_criterion);
+        space.borrow_mut().display_statistics();
+    }
 }
