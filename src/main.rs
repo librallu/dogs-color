@@ -1,6 +1,7 @@
 //! DOGS implementation of the Graph Coloring problem
 
 
+// #![warn(clippy::all, clippy::pedantic)]
 // useful additional warnings if docs are missing, or crates imported but unused, etc.
 #![warn(missing_debug_implementations)]
 #![warn(missing_docs)]
@@ -14,17 +15,6 @@
 #![warn(clippy::shadow_unrelated)]
 #![warn(clippy::shadow_same)]
 #![warn(clippy::shadow_reuse)]
-
-// checks integer arithmetic in the project
-// #![warn(clippy::integer_arithmetic)]
-
-// these flags can be useful, but will indicate normal behavior
-// #![warn(clippy::print_stdout)]
-// #![warn(clippy::use_debug)]
-// #![warn(clippy::cast_possible_truncation)]
-// #![warn(clippy::cast_possible_wrap)]
-// #![warn(clippy::cast_precision_loss)]
-// #![warn(clippy::cast_sign_loss)]
 
 #[macro_use]
 extern crate clap;
@@ -45,15 +35,18 @@ use dogs::tree_search::algo::beam_search::create_iterative_beam_search;
 
 // register modules
 mod color;
-use color::Instance;
+mod dsatur;
+mod dimacs;
 
+use color::Instance;
 use crate::dsatur::DSATURSpace;
 
-mod dsatur;
 
 /**
-reads an instance, takes the time limit as a parameter,
-and solves the problem
+reads an instance, takes the time limit as a parameter, and solves the problem.
+
+# Panics
+ - if the time cannot be parsed
 */
 pub fn main() {
     // parse arguments
@@ -62,7 +55,8 @@ pub fn main() {
     // read instance file, time, and optionnal parameters
     println!("=========================================================");
     let inst_filename = main_args.value_of("instance").unwrap();
-    let t:f32 = main_args.value_of("time").unwrap().parse::<f32>().unwrap();
+    let t:f32 = main_args.value_of("time").unwrap().parse::<f32>()
+        .expect("unable to parse the time given");
     // read value of the solution filename
     let _sol_file: Option<String> = match main_args.value_of("solution") {
         None => None,
