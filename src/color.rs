@@ -1,7 +1,6 @@
-use std::fs;
 use bit_set::BitSet;
 
-use crate::dimacs::{skip_comments, read_edge, read_header};
+use crate::dimacs::{read_from_file};
 
 /** Vertex Id */
 pub type VertexId = usize;
@@ -20,6 +19,8 @@ pub struct Instance {
     m: usize,
     /// adj_list[i]: list of vertices adjacent to i
     adj_list: Vec<Vec<VertexId>>,
+    /// if exists: adj_matrix[i] represents a bitset of its neighbors
+    adj_matrix: Option<Vec<BitSet>>,
 }
 
 
@@ -38,27 +39,10 @@ impl Instance {
 
     /// creates an instance from a DIMACS file
     pub fn from_file(filename:&str) -> Self {
-        let s1 = fs::read_to_string(filename)
-            .expect("Instance: unable to read file").replace("\r","");
-        let s2 = skip_comments(s1.as_str()).unwrap().0;
-        let (mut s3,(n,m)) = read_header(s2).unwrap();
-        let mut adj_list = vec![Vec::new();n];
-        let mut check_nb_edges = 0;
-        while match read_edge(s3) {
-            Ok((tmp,(a,b))) => {
-                s3 = tmp;
-                adj_list[a-1].push(b-1);
-                adj_list[b-1].push(a-1);
-                check_nb_edges += 1;
-                true
-            }
-            Err(_) => false
-        } {}
-        assert!(
-            check_nb_edges == m || 2*check_nb_edges == m,
-            "check: {}\t m: {}", check_nb_edges, m
-        );
-        Self { n, m, adj_list }
+        let (n,m,adj_list) = read_from_file(filename);
+        let mut res = Self { n, m, adj_list, adj_matrix:None };
+        res.populate_adj_matrix();
+        res
     }
 
     /// print statistics of the instance
@@ -70,8 +54,35 @@ impl Instance {
         }).collect();
         println!("\t{} \t min degree", degrees.iter().min().unwrap());
         println!("\t{} \t min degree", degrees.iter().max().unwrap());
+        match self.adj_matrix {
+            None => {},
+            Some(_) => println!("\tadj matrix computed")
+        }
     }
 
+    /// if called, populate the adj_matrix
+    pub fn populate_adj_matrix(&mut self) {
+        let mut res = vec![BitSet::default(); self.n];
+        for (a,resa) in res.iter_mut().enumerate() {
+            for b in &self.adj_list[a] {
+                resa.insert(*b);
+            }
+        }
+        self.adj_matrix = Some(res);
+    }
+
+    /** returns if a and b are adjacent
+    if the adjacency matrix is defined: O(1)
+    otherwise: O(Δ(G))
+    */
+    pub fn are_adjacent(&self, a:VertexId, b:VertexId) -> bool {
+        match &self.adj_matrix {
+            None => {
+                self.adj(a).iter().any(|c| &b==c)
+            },
+            Some(matrix) => { matrix[a].contains(b) }
+        }
+    }
 }
 
 /**
@@ -95,14 +106,8 @@ pub fn checker(inst:&Instance, sol:&[Vec<VertexId>]) -> Option<usize> {
     // check conflicts
     for c in sol {
         for v1 in c {
-            let mut adj_v1 = BitSet::new();
-            for neigh in inst.adj(*v1) {
-                adj_v1.insert(*neigh);
-            }
             for v2 in c {
-                if adj_v1.contains(*v2) {
-                    return None;
-                }
+                if inst.are_adjacent(*v1, *v2) { return None }
             }
         }
     }

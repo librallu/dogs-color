@@ -5,8 +5,7 @@ Discrete Optimization Global Search for the Graph Coloring problem
 
 - [X] read latest DIMACS format (p edge)
 - [ ] read previous DIMACS format (p col)
-- [X] DSATUR base implementation
-- [ ] DSATUR efficient implementation
+- [X] DSATUR branch-and-bound base implementation
 - [ ] RLF implementation (see https://www.gerad.ca/~alainh/RLFPaper.pdf)
     - [ ] RLF* 
     - [ ] XRLF

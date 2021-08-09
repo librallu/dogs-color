@@ -39,7 +39,7 @@ mod dsatur;
 mod dimacs;
 
 use color::Instance;
-use crate::dsatur::DSATURSpace;
+use crate::dsatur::dsatur_greedy;
 
 
 /**
@@ -82,19 +82,22 @@ pub fn main() {
     let logger = Rc::new(MetricLogger::default());
     let stopping_criterion = TimeStoppingCriterion::new(t);
     if main_args.subcommand_matches("dsatur").is_some() {
-        // create search space
-        let space = Rc::new(RefCell::new(
-            StatTsDecorator::new(
-                PruningDecorator::new(
-                    DSATURSpace::new(inst)
-                )
-            ).bind_logger(Rc::downgrade(&logger)),
-        ));
-        // create the search algorithm
-        logger.display_headers();
-        let mut ts = create_iterative_beam_search(space.clone(), 1., 2.)
-            .bind_logger(Rc::downgrade(&logger));
-        ts.run(stopping_criterion);
-        space.borrow_mut().display_statistics();
+        // // create search space
+        // let space = Rc::new(RefCell::new(
+        //     StatTsDecorator::new(
+        //         PruningDecorator::new(
+        //             DSATURSpace::new(inst)
+        //         )
+        //     ).bind_logger(Rc::downgrade(&logger)),
+        // ));
+        // // create the search algorithm
+        // logger.display_headers();
+        // let mut ts = create_iterative_beam_search(space.clone(), 1., 2.)
+        //     .bind_logger(Rc::downgrade(&logger));
+        // ts.run(stopping_criterion);
+        // space.borrow_mut().display_statistics();
+        let solution = dsatur_greedy(inst);
+        println!("nb initial colors: {}", solution.len());
+        println!("{:?}", solution);
     }
 }

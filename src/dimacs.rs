@@ -1,6 +1,33 @@
+use std::fs;
+
 use nom::{IResult, error::Error};
 use nom::bytes::complete::take;
 
+
+/// reads an instance from file, returns (n,m,adj_list)
+pub fn read_from_file(filename:&str) -> (usize, usize, Vec<Vec<usize>>) {
+    let s1 = fs::read_to_string(filename)
+        .expect("Instance: unable to read file").replace("\r","");
+    let s2 = skip_comments(s1.as_str()).unwrap().0;
+    let (mut s3,(n,m)) = read_header(s2).unwrap();
+    let mut adj_list = vec![Vec::new();n];
+    let mut check_nb_edges = 0;
+    while match read_edge(s3) {
+        Ok((tmp,(a,b))) => {
+            s3 = tmp;
+            adj_list[a-1].push(b-1);
+            adj_list[b-1].push(a-1);
+            check_nb_edges += 1;
+            true
+        }
+        Err(_) => false
+    } {}
+    assert!(
+        check_nb_edges == m || 2*check_nb_edges == m,
+        "check: {}\t m: {}", check_nb_edges, m
+    );
+    (n, m, adj_list)
+}
 
 /// skips a single comment
 fn skip_comment(s:&str) -> IResult<&str, &str> {
