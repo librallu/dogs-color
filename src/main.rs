@@ -34,9 +34,11 @@ use dogs::tree_search::algo::beam_search::create_iterative_beam_search;
 
 
 // register modules
-mod color;
-mod dsatur;
 mod dimacs;
+mod color;
+
+mod dsatur;
+mod tabucol;
 
 use color::Instance;
 use crate::dsatur::dsatur_greedy;

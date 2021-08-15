@@ -17,6 +17,8 @@ pub struct Instance {
     n: usize,
     /// nb edges
     m: usize,
+    /// edges of the graph
+    edges: Vec<(VertexId,VertexId)>,
     /// adj_list[i]: list of vertices adjacent to i
     adj_list: Vec<Vec<VertexId>>,
     /// if exists: adj_matrix[i] represents a bitset of its neighbors
@@ -37,10 +39,31 @@ impl Instance {
         &self.adj_list[i]
     }
 
+    /// edge list
+    pub fn edges(&self) -> &[(VertexId, VertexId)] {
+        &self.edges
+    }
+
+    /// builds the edge list
+    pub fn build_edges(adj_list:&[Vec<VertexId>]) -> Vec<(VertexId,VertexId)> {
+        let mut res = Vec::new();
+        for (i,l) in adj_list.iter().enumerate() {
+            for j in l {
+                if i < *j {
+                    res.push((i,*j));
+                }
+            }
+        }
+        res
+    }
+
     /// creates an instance from a DIMACS file
     pub fn from_file(filename:&str) -> Self {
         let (n,m,adj_list) = read_from_file(filename);
-        let mut res = Self { n, m, adj_list, adj_matrix:None };
+        let edges = Self::build_edges(&adj_list);
+        let mut res = Self {
+            n,m, adj_list, edges, adj_matrix:None
+        };
         res.populate_adj_matrix();
         res
     }
