@@ -3,7 +3,7 @@ use std::rc::Rc;
 use rand::distributions::{Distribution, Uniform};
 use bit_set::BitSet;
 
-use dogs::search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution};
+use dogs::search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution, DecisionSpace};
 
 use crate::color::{Instance, Solution, VertexId, checker};
 
@@ -48,10 +48,16 @@ pub struct SearchState {
 /**
 Decision of changing the color of vertex v by c
 */
-#[derive(Debug,Clone)]
+#[derive(Debug,Clone,Hash,Eq,PartialEq)]
 pub struct Decision {
     pub v: VertexId,
     pub c: usize,
+}
+
+impl Default for Decision {
+    fn default() -> Self {
+        unimplemented!()
+    }
 }
 
 impl SearchState {
@@ -83,10 +89,10 @@ impl SearchState {
     }
 
     /** applies a decision to the search state */
-    pub fn commit(&mut self, decision:Decision) {
+    pub fn commit(&mut self, decision:&Decision) {
         // create a restore decision and add it to the revert_decisions
         self.revert_decisions.push(Decision { v: decision.v, c: self.colors[decision.v] });
-        self.apply_decision(&decision);
+        self.apply_decision(decision);
     }
 
     /** restores the state before a decision to the search state */
@@ -147,12 +153,20 @@ impl SearchSpace<Node, i32> for SearchState {
 }
 
 
+impl DecisionSpace<Node, Decision> for SearchState {
+    fn decision(&self, n:&Node) -> Option<Decision> {
+        n.decision.clone()
+    }
+}
+
+
 impl TotalNeighborGeneration<Node> for SearchState {
     fn neighbors(&mut self, node: &mut Node) -> Vec<Node> {
+        println!("{}", node.nb_conflicts);
         // apply decision within the node
         match &node.decision {
             None => {},
-            Some(d) => self.apply_decision(d)
+            Some(d) => self.commit(d)
         };
         // for each conflicting edge, mark endpoints as to visit
         let mut vertices_to_change = Vec::new();
@@ -198,6 +212,15 @@ mod tests {
 
     use super::*;
 
+    use std::cell::RefCell;
+
+    use dogs::metric_logger::MetricLogger;
+    use dogs::search_algorithm::{SearchAlgorithm, NeverStoppingCriterion};
+    use dogs::combinators::stats::StatTsCombinator;
+    use dogs::combinators::tabu::TabuCombinator;
+    use dogs::combinators::helper::tabu_tenure::FullTabuTenure;
+    use dogs::tree_search::greedy::Greedy;
+
     #[test]
     fn test_root_node() {
         let inst = Rc::new(Instance::from_file("insts/instances-dimacs1/le450_15a.col"));
@@ -226,5 +249,24 @@ mod tests {
                 .filter(|e| e.nb_conflicts < current_node.nb_conflicts)
                 .cloned().collect();
         }
+    }
+
+    #[test]
+    fn test_greedy() {
+        let inst = Rc::new(Instance::from_file("insts/instances-dimacs1/le450_15a.col"));
+        let logger = Rc::new(MetricLogger::default());
+        let search_state = Rc::new(RefCell::new(
+            StatTsCombinator::new(
+                TabuCombinator::new(
+                    SearchState::random_solution(inst, 17),
+                    FullTabuTenure::default()
+                )
+                
+            ).bind_logger(Rc::downgrade(&logger))
+        ));
+        let stopping_criterion = NeverStoppingCriterion::default();
+        let mut ts = Greedy::new(search_state.clone());
+        ts.run(stopping_criterion);
+        search_state.borrow_mut().display_statistics();
     }
 }

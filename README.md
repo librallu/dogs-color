@@ -7,6 +7,7 @@ Discrete Optimization Global Search for the Graph Coloring problem
 - [ ] read previous DIMACS format (p col)
 - [X] DSATUR branch-and-bound base implementation
 - [ ] RLF implementation (see https://www.gerad.ca/~alainh/RLFPaper.pdf)
-    - [ ] RLF* 
-    - [ ] XRLF
 - [ ] TabuCol
+    - [X] branching
+    - [X] DOGS greedy call
+    - [X] tabu list

@@ -5,7 +5,7 @@ use ordered_float::OrderedFloat;
 use bit_set::BitSet;
 
 use dogs::search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution};
-use dogs::tree_search::algo::beam_search::BeamSearch;
+use dogs::tree_search::beam_search::BeamSearch;
 use dogs::search_algorithm::{NeverStoppingCriterion, SearchAlgorithm};
 
 use crate::color::{Instance, Solution, VertexId, checker};

@@ -27,10 +27,10 @@ use std::cell::RefCell;
 use dogs::metric_logger::MetricLogger;
 use dogs::search_algorithm::{SearchAlgorithm, TimeStoppingCriterion};
 // use dogs::search_space::{SearchSpace, ToSolution};
-use dogs::tree_search::decorators::stats::StatTsDecorator;
-use dogs::tree_search::decorators::pruning::PruningDecorator;
+use dogs::combinators::stats::StatTsCombinator;
+use dogs::combinators::pruning::PruningCombinator;
 // use dogs::tree_search::algo::beam_search::BeamSearch;
-use dogs::tree_search::algo::beam_search::create_iterative_beam_search;
+use dogs::tree_search::beam_search::create_iterative_beam_search;
 
 
 // register modules
