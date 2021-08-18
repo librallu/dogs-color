@@ -76,7 +76,7 @@ impl Instance {
             self.adj(i).len()
         }).collect();
         println!("\t{} \t min degree", degrees.iter().min().unwrap());
-        println!("\t{} \t min degree", degrees.iter().max().unwrap());
+        println!("\t{} \t max degree", degrees.iter().max().unwrap());
         match self.adj_matrix {
             None => {},
             Some(_) => println!("\tadj matrix computed")

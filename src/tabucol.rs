@@ -3,7 +3,7 @@ use std::rc::Rc;
 use rand::distributions::{Distribution, Uniform};
 use bit_set::BitSet;
 
-use dogs::search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution, DecisionSpace};
+use dogs::{combinators::helper::tabu_tenure::TabuTenure, search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution, DecisionSpace}};
 
 use crate::color::{Instance, Solution, VertexId, checker};
 
@@ -19,7 +19,60 @@ pub struct Node {
     nb_conflicts: usize,
 }
 
-/**
+/** implements a specific tabu tenure for the graph coloring
+Is parametrized by:
+ - L: minimum size of the tabu tenure (example value: 5)
+ - λ: (example value: 0.6)
+keeps all moves that are between L+λ.F(c) where F(c) is the number of conflicts.
+Maintains the current iteration number and the last iteration in which
+the decision have been taken. When checking if a conflict exists,
+checks that its last access is greater than current_iter - L+λ.F(c)
+*/
+pub struct TabuColTenure {
+    /// tabu fixed size
+    l:usize,
+    /// tabu dynamic size
+    lambda: f64,
+    /// number of iterations since the beginning of the search
+    nb_iter: usize,
+    /// decisions[v][c]: last iteration in which the decision have been taken
+    decisions: Vec<Vec<Option<usize>>>
+}
+
+impl TabuTenure<Node, Decision> for TabuColTenure {
+    fn insert(&mut self, _n:&Node, d:Decision) {
+        self.decisions[d.v][d.c] = Some(self.nb_iter);
+        self.nb_iter += 1;
+    }
+
+    fn contains(&self, n:&Node, d:&Decision) -> bool {
+        match self.decisions[d.v][d.c] {
+            None => false,
+            Some(i) => {
+                i >= self.nb_iter - (self.l + (self.lambda * (n.nb_conflicts as f64)) as usize)
+            }
+        }
+    }
+}
+
+impl TabuColTenure {
+    /** creates a tabucol tenure given:
+     - l: fixed tabu size
+     - λ: variable tabu size
+     - n: the number of vertices in the graph
+     - c: the maximum number of colors
+    */
+    pub fn new(l:usize, lambda: f64, n:usize, c:usize) -> Self {
+        Self {
+            l, lambda,
+            nb_iter: 0,
+            decisions: vec![vec![None ; c] ; n],
+        }
+    }
+}
+
+
+/** (see https://www.sciencedirect.com/science/article/pii/S0305054805002315 for more details)
 Implements a local search procedure for the graph coloring (TabuCol).
 Starts with an initial solution
   - either invalid: the local search aims to make it valid
@@ -154,9 +207,9 @@ impl SearchSpace<Node, i32> for SearchState {
 
 
 impl DecisionSpace<Node, Decision> for SearchState {
-    fn decision(&self, n:&Node) -> Option<Decision> {
-        n.decision.clone()
-    }
+    fn decision(&self, n:&Node) -> Option<Decision> { n.decision.clone() }
+
+    fn aspiration_criterion(&self, n:&Node) -> bool { n.nb_conflicts == 0 }
 }
 
 
@@ -253,13 +306,15 @@ mod tests {
 
     #[test]
     fn test_greedy() {
-        let inst = Rc::new(Instance::from_file("insts/instances-dimacs1/le450_15a.col"));
+        let inst = Rc::new(Instance::from_file("insts/instances-dimacs1/le450_15b.col"));
+        let nb_initial_colors:usize = 16;
         let logger = Rc::new(MetricLogger::default());
         let search_state = Rc::new(RefCell::new(
             StatTsCombinator::new(
                 TabuCombinator::new(
-                    SearchState::random_solution(inst, 17),
-                    FullTabuTenure::default()
+                    SearchState::random_solution(inst.clone(), nb_initial_colors),
+                    // FullTabuTenure::default()
+                    TabuColTenure::new(50, 0.6, inst.n(), nb_initial_colors)
                 )
                 
             ).bind_logger(Rc::downgrade(&logger))
