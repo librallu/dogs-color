@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use rand::distributions::{Distribution, Uniform};
+use rand::Rng;
 use bit_set::BitSet;
 
 use dogs::{combinators::helper::tabu_tenure::TabuTenure, search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution, DecisionSpace}};
@@ -49,7 +49,8 @@ impl TabuTenure<Node, Decision> for TabuColTenure {
         match self.decisions[d.v][d.c] {
             None => false,
             Some(i) => {
-                i >= self.nb_iter - (self.l + (self.lambda * (n.nb_conflicts as f64)) as usize)
+                let threshold = self.l + (self.lambda * (n.nb_conflicts as f64)) as usize;
+                threshold > self.nb_iter || i >= self.nb_iter - threshold
             }
         }
     }
@@ -96,6 +97,8 @@ pub struct SearchState {
     revert_decisions: Vec<Decision>,
     /// number of colors used
     nb_colors: usize,
+    /// nb_neigh_colors[v][c]: number of neighbors of v that are assigned color c
+    nb_neigh_colors: Vec<Vec<usize>>,
 }
 
 /**
@@ -120,16 +123,22 @@ impl SearchState {
     */
     pub fn random_solution(inst:Rc<Instance>, nb_colors:usize) -> Self {
         let mut rng = rand::thread_rng();
-        let uniform_distribution = Uniform::from(0..nb_colors+1);
         let mut colors:Vec<usize> = Vec::with_capacity(inst.n());
-        for _ in 0..inst.n() {
-            colors.push(uniform_distribution.sample(&mut rng));
+        let mut nb_neigh_colors = vec![ vec![0 ; nb_colors] ; inst.n()];
+        for i in 0..inst.n() { // color each vertex
+            let c = rng.gen_range(0..nb_colors); // excludes nb_colors
+            colors.push(c);
+            // for each neighbor of i, increment the number of adjacent vertices of color c
+            for j in inst.adj(i) {
+                nb_neigh_colors[*j][c] += 1;
+            }
         }
         Self {
             inst,
             colors,
             revert_decisions: Vec::new(),
             nb_colors,
+            nb_neigh_colors,
         }
     }
 
@@ -149,7 +158,7 @@ impl SearchState {
     }
 
     /** restores the state before a decision to the search state */
-    pub fn restore(&mut self) {
+    fn restore(&mut self) {
         let d = self.revert_decisions.pop()
             .expect("SearchState.restore: no restore decision. Unable to revert (internal error)");
         // apply revert decision
@@ -158,6 +167,14 @@ impl SearchState {
 
     /** just applies the decision (either called from restore or commit) */
     fn apply_decision(&mut self, decision:&Decision) {
+        // update nb_neigh_color
+        let previous_color = self.colors[decision.v];
+        for neigh in self.inst.adj(decision.v) {
+            debug_assert!(self.nb_neigh_colors[*neigh][previous_color] > 0);
+            self.nb_neigh_colors[*neigh][previous_color] -= 1;
+            self.nb_neigh_colors[*neigh][decision.c] += 1;
+        }
+        // update colors
         self.colors[decision.v] = decision.c;
     }
 
@@ -215,7 +232,7 @@ impl DecisionSpace<Node, Decision> for SearchState {
 
 impl TotalNeighborGeneration<Node> for SearchState {
     fn neighbors(&mut self, node: &mut Node) -> Vec<Node> {
-        println!("{}", node.nb_conflicts);
+        // println!("{}", node.nb_conflicts);
         // apply decision within the node
         match &node.decision {
             None => {},
@@ -241,16 +258,8 @@ impl TotalNeighborGeneration<Node> for SearchState {
         for v in vertices_to_change {
             for c in 0..self.nb_colors {
                 if self.colors[v] != c {
-                    let mut new_nb_conflicts = nb_conflicts;
-                    // update number of conflicts
-                    for u in self.inst.adj(v) {
-                        if self.colors[*u] == c {  // if new conflict
-                            new_nb_conflicts += 1;
-                        }
-                        if self.colors[*u] == self.colors[v] {  //  if remove conflict
-                            new_nb_conflicts -= 1;
-                        }
-                    }
+                    let new_nb_conflicts = nb_conflicts + 
+                        self.nb_neigh_colors[v][c] - self.nb_neigh_colors[v][self.colors[v]];
                     res.push(Node { decision: Some(Decision {v, c}), nb_conflicts: new_nb_conflicts })
                 }
             }
@@ -271,7 +280,6 @@ mod tests {
     use dogs::search_algorithm::{SearchAlgorithm, NeverStoppingCriterion};
     use dogs::combinators::stats::StatTsCombinator;
     use dogs::combinators::tabu::TabuCombinator;
-    use dogs::combinators::helper::tabu_tenure::FullTabuTenure;
     use dogs::tree_search::greedy::Greedy;
 
     #[test]
@@ -306,8 +314,8 @@ mod tests {
 
     #[test]
     fn test_greedy() {
-        let inst = Rc::new(Instance::from_file("insts/instances-dimacs1/le450_15b.col"));
-        let nb_initial_colors:usize = 16;
+        let inst = Rc::new(Instance::from_file("insts/instances-dimacs1/le450_15a.col"));
+        let nb_initial_colors:usize = 17;
         let logger = Rc::new(MetricLogger::default());
         let search_state = Rc::new(RefCell::new(
             StatTsCombinator::new(

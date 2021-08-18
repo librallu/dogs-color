@@ -61,6 +61,7 @@ impl Instance {
     pub fn from_file(filename:&str) -> Self {
         let (n,m,adj_list) = read_from_file(filename);
         let edges = Self::build_edges(&adj_list);
+        // assert_eq!(m, edges.len());
         let mut res = Self {
             n,m, adj_list, edges, adj_matrix:None
         };
