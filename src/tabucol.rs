@@ -3,7 +3,10 @@ use std::rc::Rc;
 use rand::Rng;
 use bit_set::BitSet;
 
-use dogs::{combinators::helper::tabu_tenure::TabuTenure, search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution, DecisionSpace}};
+use dogs::combinators::helper::tabu_tenure::TabuTenure;
+use dogs::search_space::{
+    SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution, DecisionSpace
+};
 
 use crate::color::{Instance, Solution, VertexId, checker};
 

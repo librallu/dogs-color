@@ -57,20 +57,32 @@ impl Instance {
         res
     }
 
-    /// creates an instance from a DIMACS file
-    pub fn from_file(filename:&str) -> Self {
-        let (n,m,adj_list) = read_from_file(filename);
+    pub fn new(adj_list:Vec<Vec<usize>>) -> Self {
+        let n = adj_list.len();
+        // compute nb edges
+        let mut m = 0;
+        for e in &adj_list { // at the end: m = ∑ d(v)
+            m += e.len();
+        }
+        m /= 2; // m = (∑ d(v)) / 2
         let edges = Self::build_edges(&adj_list);
         // assert_eq!(m, edges.len());
-        let mut res = Self {
-            n,m, adj_list, edges, adj_matrix:None
-        };
-        res.populate_adj_matrix();
-        res
+        // let mut res = Self {
+        //     n,m, adj_list, edges, adj_matrix:None
+        // };
+        // res.populate_adj_matrix(); // precompute adjacency matrix
+        // res
+        Self { n,m, edges, adj_list, adj_matrix:None }
+    }
+
+    /// creates an instance from a DIMACS file
+    pub fn from_file(filename:&str) -> Self {
+        let (_,_,adj_list) = read_from_file(filename);
+        Self::new(adj_list)
     }
 
     /// print statistics of the instance
-    pub fn print_stats(&self) {
+    pub fn display_statistics(&self) {
         println!("\t{} \t vertices", self.n());
         println!("\t{} \t edges", self.m());
         let degrees:Vec<usize> = (0..self.n()).map(|i| {

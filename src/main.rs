@@ -35,6 +35,7 @@ use dogs::tree_search::beam_search::create_iterative_beam_search;
 
 // register modules
 mod dimacs;
+mod cgshop;
 mod color;
 
 mod dsatur;
@@ -77,7 +78,7 @@ pub fn main() {
     };
     println!("reading instance: {}...", inst_filename);
     let inst = Rc::new(Instance::from_file(inst_filename));
-    inst.print_stats();
+    inst.display_statistics();
     // println!("{:?}", inst);
     println!("time limit: {}", t);
     // create logger and stopping criterion
