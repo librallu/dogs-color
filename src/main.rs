@@ -43,6 +43,7 @@ mod tabucol;
 
 use color::Instance;
 use crate::dsatur::dsatur_greedy;
+use crate::tabucol::tabucol;
 
 
 /**
@@ -102,5 +103,12 @@ pub fn main() {
         let solution = dsatur_greedy(inst);
         println!("nb initial colors: {}", solution.len());
         println!("{:?}", solution);
+    } else if main_args.subcommand_matches("tabucol").is_some() {
+        // run greedy (dsatur)
+        let solution = dsatur_greedy(inst.clone());
+        println!("nb initial colors: {}", solution.len());
+        // println!("{:?}", solution);
+        // run tabucol
+        tabucol(inst, solution.len()-1, stopping_criterion, None);
     }
 }

@@ -1,12 +1,18 @@
 use std::rc::Rc;
+use std::cell::RefCell;
 
 use rand::Rng;
 use bit_set::BitSet;
 
+use dogs::search_algorithm::{SearchAlgorithm, StoppingCriterion, TimeStoppingCriterion};
 use dogs::combinators::helper::tabu_tenure::TabuTenure;
 use dogs::search_space::{
     SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution, DecisionSpace
 };
+use dogs::metric_logger::MetricLogger;
+use dogs::combinators::stats::StatTsCombinator;
+use dogs::combinators::tabu::TabuCombinator;
+use dogs::tree_search::greedy::Greedy;
 
 use crate::color::{Instance, Solution, VertexId, checker};
 
@@ -272,6 +278,37 @@ impl TotalNeighborGeneration<Node> for SearchState {
 }
 
 
+/**
+Runs a tabucol algorithm. Given an instance and an initial number of colors, run the search algorithm until the stopping criterion is reached.
+Optionnaly, a filename is given to export the solution
+*/
+pub fn tabucol<Stopping:StoppingCriterion>(inst:Rc<Instance>, nb_initial_colors:usize, stopping_criterion:Stopping, output_filename:Option<String>) {
+    let mut nb_colors = nb_initial_colors;
+    while !stopping_criterion.is_finished() {
+        let search_state = Rc::new(RefCell::new(
+            TabuCombinator::new(
+                SearchState::random_solution(inst.clone(), nb_colors),
+                TabuColTenure::new(60, 0.6, inst.n(), nb_colors)
+            )
+        ));
+        let mut ts = Greedy::new(search_state.clone());
+        ts.run(stopping_criterion.clone());
+        // check that the last solution is valid
+        match ts.get_manager().best() {
+            None => {}
+            Some(node) => {
+                if node.nb_conflicts == 0 {
+                    println!("\t{} colors found!", nb_colors);
+                }
+            }
+        }
+        // TODO print output file if asked
+        nb_colors -= 1;
+    }
+}
+
+
+
 #[cfg(test)]
 mod tests {
 
@@ -334,5 +371,13 @@ mod tests {
         let mut ts = Greedy::new(search_state.clone());
         ts.run(stopping_criterion);
         search_state.borrow_mut().display_statistics();
+    }
+
+    #[test]
+    fn test_metaheuristic() {
+        let inst = Rc::new(Instance::from_file("insts/instances-dimacs1/le450_15a.col"));
+        let nb_initial_colors:usize = 20;
+        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3.);
+        tabucol(inst, nb_initial_colors, stopping_criterion, None);
     }
 }
