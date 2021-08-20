@@ -4,13 +4,11 @@ use std::cell::RefCell;
 use rand::Rng;
 use bit_set::BitSet;
 
-use dogs::search_algorithm::{SearchAlgorithm, StoppingCriterion, TimeStoppingCriterion};
+use dogs::search_algorithm::{SearchAlgorithm, StoppingCriterion};
 use dogs::combinators::helper::tabu_tenure::TabuTenure;
 use dogs::search_space::{
     SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution, DecisionSpace
 };
-use dogs::metric_logger::MetricLogger;
-use dogs::combinators::stats::StatTsCombinator;
 use dogs::combinators::tabu::TabuCombinator;
 use dogs::tree_search::greedy::Greedy;
 
@@ -102,8 +100,6 @@ pub struct SearchState {
     inst: Rc<Instance>,
     /// colors[v]: color of the vertex v
     colors: Vec<usize>,
-    /// history of decisions to revert changes (should be used as a stack)
-    revert_decisions: Vec<Decision>,
     /// number of colors used
     nb_colors: usize,
     /// nb_neigh_colors[v][c]: number of neighbors of v that are assigned color c
@@ -145,7 +141,6 @@ impl SearchState {
         Self {
             inst,
             colors,
-            revert_decisions: Vec::new(),
             nb_colors,
             nb_neigh_colors,
         }
@@ -161,17 +156,7 @@ impl SearchState {
 
     /** applies a decision to the search state */
     pub fn commit(&mut self, decision:&Decision) {
-        // create a restore decision and add it to the revert_decisions
-        self.revert_decisions.push(Decision { v: decision.v, c: self.colors[decision.v] });
         self.apply_decision(decision);
-    }
-
-    /** restores the state before a decision to the search state */
-    fn restore(&mut self) {
-        let d = self.revert_decisions.pop()
-            .expect("SearchState.restore: no restore decision. Unable to revert (internal error)");
-        // apply revert decision
-        self.apply_decision(&d);
     }
 
     /** just applies the decision (either called from restore or commit) */
@@ -317,7 +302,7 @@ mod tests {
     use std::cell::RefCell;
 
     use dogs::metric_logger::MetricLogger;
-    use dogs::search_algorithm::{SearchAlgorithm, NeverStoppingCriterion};
+    use dogs::search_algorithm::{SearchAlgorithm, NeverStoppingCriterion, TimeStoppingCriterion};
     use dogs::combinators::stats::StatTsCombinator;
     use dogs::combinators::tabu::TabuCombinator;
     use dogs::tree_search::greedy::Greedy;

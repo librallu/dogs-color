@@ -66,12 +66,6 @@ impl Instance {
         }
         m /= 2; // m = (∑ d(v)) / 2
         let edges = Self::build_edges(&adj_list);
-        // assert_eq!(m, edges.len());
-        // let mut res = Self {
-        //     n,m, adj_list, edges, adj_matrix:None
-        // };
-        // res.populate_adj_matrix(); // precompute adjacency matrix
-        // res
         Self { n,m, edges, adj_list, adj_matrix:None }
     }
 

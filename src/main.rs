@@ -83,7 +83,7 @@ pub fn main() {
     // println!("{:?}", inst);
     println!("time limit: {}", t);
     // create logger and stopping criterion
-    let logger = Rc::new(MetricLogger::default());
+    // let logger = Rc::new(MetricLogger::default());
     let stopping_criterion = TimeStoppingCriterion::new(t);
     if main_args.subcommand_matches("dsatur").is_some() {
         // // create search space
