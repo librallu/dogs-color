@@ -10,19 +10,18 @@ Discrete Optimization Global Search for the Graph Coloring problem
 # Algorithms
 
 - [X] DSATUR simple greedy & branch-and-bound
-- [X] TabuCol algorithm
+- [X] TabuCol algorithm (https://link.springer.com/content/pdf/10.1007/BF02239976.pdf)
 
 
 # What's next (DIMACS format)?
 
-- [ ] read previous DIMACS format (p col)
 - [ ] compute more instance metrics (see https://www.sciencedirect.com/science/article/pii/S0305054813003389?via%3Dihub)
 - [ ] write DIMACS format
 
 
 # What's next (SOCG22 competition)
 
-- [ ] SOCG22 solution output
+- [ ] SOCG22 solution output compatibility
 
 
 # What's next (algorithms)?

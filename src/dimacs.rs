@@ -1,7 +1,8 @@
 use std::fs;
 
 use nom::{IResult, error::Error};
-use nom::bytes::complete::take;
+use nom::bytes::complete::{take, tag, take_until};
+use nom::branch::alt;
 
 
 /// reads an instance from file, returns (n,m,adj_list)
@@ -31,12 +32,12 @@ pub fn read_from_file(filename:&str) -> (usize, usize, Vec<Vec<usize>>) {
 
 /// skips a single comment
 fn skip_comment(s:&str) -> IResult<&str, &str> {
-    match nom::bytes::complete::tag("c")(s) {
+    match tag("c")(s) {
         Ok((remaining,_)) => { // if a comment: read until a '\n'
-            match nom::bytes::complete::take_until("\n")(remaining) {
+            match take_until("\n")(remaining) {
                 Ok((remaining2, _)) => {
                     let n:usize = 1;
-                    nom::bytes::complete::take(n)(remaining2)
+                    take(n)(remaining2)
                 },
                 Err(e) => Err(e),
             }
@@ -82,7 +83,7 @@ fn read_two_integers(s:&str) -> IResult<&str, (usize,usize)> {
 
 /// reads header containing (n,m)
 pub fn read_header(s:&str) -> IResult<&str, (usize,usize)> {
-    match nom::bytes::complete::tag("p edge ")(s) {
+    match alt((tag("p edge "), tag("p col ")))(s) {
         Ok((remaining,_)) => { // if ok, read the two numbers
             read_two_integers(remaining)
         }
@@ -124,6 +125,20 @@ mod tests {
         let s = "p edge 2 1\ne 1 2";
         assert_eq!(read_header(s).unwrap().0, "e 1 2");
         assert_eq!(read_header(s).unwrap().1, (2,1));
+    }
+
+    #[test]
+    fn test_read_header_col() {
+        let s = "p col 2 1\ne 1 2";
+        assert_eq!(read_header(s).unwrap().0, "e 1 2");
+        assert_eq!(read_header(s).unwrap().1, (2,1));
+    }
+
+    #[test]
+    fn test_read_edges_on_one_line() {
+        let (n,m,e) = read_from_file("insts/other-instances/peterson.col");
+        println!("n:{}, m:{}", n, m);
+        println!("e:{:?}", e);
     }
 
     #[test]

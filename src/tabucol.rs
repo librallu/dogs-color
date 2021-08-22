@@ -14,6 +14,23 @@ use dogs::tree_search::greedy::Greedy;
 
 use crate::color::{Instance, Solution, VertexId, checker};
 
+
+/**
+Decision of changing the color of vertex v by c
+*/
+#[derive(Debug,Clone,Hash,Eq,PartialEq)]
+pub struct Decision {
+    pub v: VertexId,
+    pub c: usize,
+}
+
+impl Default for Decision {
+    fn default() -> Self {
+        unimplemented!()
+    }
+}
+
+
 /**
 Implements a search tree node.
 Stores a decision and a number of conflicts
@@ -80,7 +97,7 @@ impl TabuColTenure {
 }
 
 
-/** (see https://www.sciencedirect.com/science/article/pii/S0305054805002315 for more details)
+/** (see https://doi.org/10.1016/j.cor.2005.07.028)
 Implements a local search procedure for the graph coloring (TabuCol).
 Starts with an initial solution
   - either invalid: the local search aims to make it valid
@@ -106,20 +123,6 @@ pub struct SearchState {
     nb_neigh_colors: Vec<Vec<usize>>,
 }
 
-/**
-Decision of changing the color of vertex v by c
-*/
-#[derive(Debug,Clone,Hash,Eq,PartialEq)]
-pub struct Decision {
-    pub v: VertexId,
-    pub c: usize,
-}
-
-impl Default for Decision {
-    fn default() -> Self {
-        unimplemented!()
-    }
-}
 
 impl SearchState {
 
