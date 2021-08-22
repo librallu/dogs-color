@@ -8,7 +8,7 @@ use dogs::search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSo
 use dogs::tree_search::beam_search::BeamSearch;
 use dogs::search_algorithm::{NeverStoppingCriterion, SearchAlgorithm};
 
-use crate::color::{Instance, Solution, VertexId, checker};
+use crate::color::{Instance, Solution, VertexId, checker, CheckerResult};
 
 /**
 Implements a DSATUR tree search space.
@@ -113,9 +113,10 @@ impl SearchSpace<Node, i64> for DSATURSpace {
     fn handle_new_best(&mut self, mut node: Node) -> Node {
         // checks that the solution is valid (call checker)
         let sol = self.solution(&mut node);
-        match checker(&self.inst, &sol) {
-            Some(v) => assert_eq!(v, node.colors.len()),
-            None => panic!("invalid solution.")
+        let checker_result = checker(&self.inst, &sol);
+        match &checker(&self.inst, &sol) {
+            CheckerResult::Ok(v) => assert_eq!(*v, node.colors.len()),
+            _ => panic!("invalid solution (error: {:?}).", checker_result)
         }
         node
     }

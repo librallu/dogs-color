@@ -12,7 +12,7 @@ use dogs::search_space::{
 use dogs::combinators::tabu::TabuCombinator;
 use dogs::tree_search::greedy::Greedy;
 
-use crate::color::{Instance, Solution, VertexId, checker};
+use crate::color::{Instance, Solution, VertexId, checker, CheckerResult};
 
 
 /**
@@ -194,13 +194,19 @@ impl GuidedSpace<Node, usize> for SearchState {
 impl ToSolution<Node, Solution> for SearchState {
     fn solution(&mut self, node: &mut Node) -> Solution {
         assert_eq!(node.nb_conflicts, 0); // check if valid
+        // apply node decision
+        match &node.decision {
+            None => {},
+            Some(d) => { self.apply_decision(d); }
+        }
+        // compute solution
         let mut sol:Solution = vec![vec![]; self.nb_colors];
         for (i,v) in self.colors.iter().enumerate() {
             sol[*v].push(i);
         }
         let res:Solution = sol.iter().filter(|e| !e.is_empty())
             .cloned().collect();
-        assert_eq!(checker(&self.inst, &res), Some(res.len()));
+        assert_eq!(checker(&self.inst, &res), CheckerResult::Ok(res.len()));
         res
     }
 }
@@ -209,20 +215,14 @@ impl SearchSpace<Node, i32> for SearchState {
     fn initial(&mut self) -> Node {
         Node { decision: None, nb_conflicts: self.conflicting_edges().len() }
     }
-
     fn bound(&mut self, _node: &Node) -> i32 { 0 }
-
-    fn goal(&mut self, node: &Node) -> bool {
-        node.nb_conflicts == 0
-    }
-
+    fn goal(&mut self, node: &Node) -> bool { node.nb_conflicts == 0 }
     fn g_cost(&mut self, _n: &Node) -> i32 { 0 }
 }
 
 
 impl DecisionSpace<Node, Decision> for SearchState {
     fn decision(&self, n:&Node) -> Option<Decision> { n.decision.clone() }
-
     fn aspiration_criterion(&self, n:&Node) -> bool { n.nb_conflicts == 0 }
 }
 
@@ -270,7 +270,7 @@ impl TotalNeighborGeneration<Node> for SearchState {
 Runs a tabucol algorithm. Given an instance and an initial number of colors, run the search algorithm until the stopping criterion is reached.
 Optionnaly, a filename is given to export the solution
 */
-pub fn tabucol<Stopping:StoppingCriterion>(inst:Rc<Instance>, nb_initial_colors:usize, stopping_criterion:Stopping, output_filename:Option<String>) {
+pub fn tabucol<Stopping:StoppingCriterion>(inst:Rc<Instance>, nb_initial_colors:usize, stopping_criterion:Stopping, solution_filename:Option<String>) {
     let mut nb_colors = nb_initial_colors;
     while !stopping_criterion.is_finished() {
         let search_state = Rc::new(RefCell::new(
@@ -283,15 +283,26 @@ pub fn tabucol<Stopping:StoppingCriterion>(inst:Rc<Instance>, nb_initial_colors:
         ts.run(stopping_criterion.clone());
         // check that the last solution is valid
         match ts.get_manager().best() {
-            None => {}
+            None => {
+                println!("\tfailed improving the solution (finding {} colors)...", nb_colors);
+                break;
+            }
             Some(node) => {
                 if node.nb_conflicts == 0 {
                     println!("\t{} colors found!", nb_colors);
+                    // print output file if asked
+                    match &solution_filename {
+                        None => {},
+                        Some(filename) => {
+                            let mut node_clone = node.clone();
+                            let solution = search_state.borrow_mut().solution(&mut node_clone);
+                            inst.write_solution(filename, &solution);
+                        }
+                    }
+                    nb_colors -= 1;
                 }
             }
         }
-        // TODO print output file if asked
-        nb_colors -= 1;
     }
 }
 
@@ -342,15 +353,15 @@ mod tests {
 
     #[test]
     fn test_greedy() {
-        let inst = Rc::new(Instance::from_file("insts/instances-dimacs1/le450_15a.col"));
-        let nb_initial_colors:usize = 17;
+        let inst = Rc::new(Instance::from_file("insts/instances-dimacs1/DSJC125.9.col"));
+        let nb_initial_colors:usize = 46;
         let logger = Rc::new(MetricLogger::default());
         let search_state = Rc::new(RefCell::new(
             StatTsCombinator::new(
                 TabuCombinator::new(
                     SearchState::random_solution(inst.clone(), nb_initial_colors),
                     // FullTabuTenure::default()
-                    TabuColTenure::new(50, 0.6, inst.n(), nb_initial_colors)
+                    TabuColTenure::new(60, 0.6, inst.n(), nb_initial_colors)
                 )
                 
             ).bind_logger(Rc::downgrade(&logger))

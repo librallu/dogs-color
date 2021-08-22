@@ -15,8 +15,8 @@ Discrete Optimization Global Search for the Graph Coloring problem
 
 # What's next (DIMACS format)?
 
-- [ ] compute more instance metrics (see https://www.sciencedirect.com/science/article/pii/S0305054813003389?via%3Dihub)
-- [ ] write DIMACS format
+- [ ] Compute more instance metrics (see https://doi.org/10.1016/j.cor.2013.11.015)
+- [ ] Write DIMACS format
 
 
 # What's next (SOCG22 competition)
@@ -30,7 +30,7 @@ Discrete Optimization Global Search for the Graph Coloring problem
 - [ ] RLF implementation (see https://www.gerad.ca/~alainh/RLFPaper.pdf)
 - [ ] Backtracking DSATUR (see https://webdocs.cs.ualberta.ca/~joe/Coloring/)
 - [ ] MACOL (see: http://azadproject.ir/wp-content/uploads/2013/12/2010-O6-A-memetic-algorithm-for-graph-coloring.pdf)
-- [ ] other local search moves (hillclimbing, partialcol)
+- [ ] other local search moves (hill climbing)
 - [ ] EXTRACOL (see: 10.1016/j.cor.2011.04.002)
 - [ ] PLSCOL probability learning algorithms (https://doi.org/10.1016/j.asoc.2018.01.027)
 - [ ] multi-level algorithm (see: https://doi.org/10.1016/j.asoc.2021.107174)

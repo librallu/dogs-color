@@ -1,8 +1,26 @@
+use std::rc::Rc;
+use std::cell::RefCell;
+
+use rand::Rng;
+use bit_set::BitSet;
+
+use crate::color::{Instance, Solution, VertexId, checker, CheckerResult};
+
+
 /** PARTIALCOL algorithm (see: 10.1016/j.cor.2006.05.014)
  - Tabu search that explores a neighborhood of feasible solutions minimizinc the number of
    unassigned solutions. Selects an unassigned vertex and a color. Color this vertex with
    the color, and unassign adjacent vertices with the same color.
 */
+
+/**
+Decision of coloring the vertex v with c
+*/
+#[derive(Debug,Clone,Hash,Eq,PartialEq)]
+pub struct Decision {
+    pub v: VertexId,
+    pub c: usize,
+}
 
 
 /**
@@ -28,7 +46,7 @@ pub struct SearchState {
     /// reference instance
     inst: Rc<Instance>,
     /// colors[v]: color of the vertex v
-    colors: Vec<usize>,
+    colors: Vec<Option<usize>>,
     /// number of colors used
     nb_colors: usize,
     /// nb_neigh_colors[v][c]: number of neighbors of v that are assigned color c
@@ -37,9 +55,57 @@ pub struct SearchState {
 
 impl SearchState {
 
-    /** Creates a new search state using a modified DSATUR procedure possibly letting some
-    vertices uncolored. */
-    pub fn random_solution(inst:Rc<Instance>, nb_colors:usize) -> Self {
-        todo!();
+    /** Creates a new search state by creating color class after color class.
+    Time complexity: O(n.m.c)
+    */
+    pub fn initial_solution(inst:Rc<Instance>, nb_colors:usize) -> Self {
+        let mut c = 0; // current number of colors
+        let mut nb_colored = 0; // number of colored vertices
+        let mut colored:BitSet<u64> = BitSet::default(); // which vertex have been colored
+        let mut colors:Vec<Option<usize>> = vec![None; inst.n()];
+        while nb_colored < inst.n() && c <= nb_colors {
+            let mut forbidden:BitSet<u64> = BitSet::default(); // set of forbidden vertices
+            // create a new color
+            for (i, color) in colors.iter_mut().enumerate() {  // iterate over all vertices, marking 
+                if !forbidden.contains(i) && !colored.contains(i) { // if we can add vertex i
+                    // color c
+                    colored.insert(i);
+                    *color = Some(c);
+                    forbidden.insert(i);
+                    nb_colored += 1;
+                    for j in inst.adj(i) {  // forbid adjacent vertices to be set in the same color
+                        forbidden.insert(*j);
+                    }
+                }
+            }
+            c += 1; // go to the next color
+        }
+        Self {
+            inst,
+            colors,
+            nb_colors: c,
+            nb_neigh_colors: Vec::new(),
+        }
     }
+}
+
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_initial_sol() {
+        let inst = Rc::new(
+            Instance::from_file("insts/instances-dimacs1/le450_15a.col")
+        );
+        let state = SearchState::initial_solution(inst, 20);
+        // println!("{:?}", state);
+        let nb_uncolored = state.colors.iter()
+            .filter(|e| **e==None)
+            .count();
+        println!("{} uncolored", nb_uncolored);
+    }
+
 }

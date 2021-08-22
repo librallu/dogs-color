@@ -40,6 +40,7 @@ mod color;
 
 mod dsatur;
 mod tabucol;
+mod partialcol;
 
 use color::Instance;
 use crate::dsatur::dsatur_greedy;
@@ -62,7 +63,7 @@ pub fn main() {
     let t:f32 = main_args.value_of("time").unwrap().parse::<f32>()
         .expect("unable to parse the time given");
     // read value of the solution filename
-    let _sol_file: Option<String> = match main_args.value_of("solution") {
+    let sol_file: Option<String> = match main_args.value_of("solution") {
         None => None,
         Some(e) => {
             println!("\t printing solutions in: {}", e);
@@ -109,6 +110,6 @@ pub fn main() {
         println!("nb initial colors: {}", solution.len());
         // println!("{:?}", solution);
         // run tabucol
-        tabucol(inst, solution.len()-1, stopping_criterion, None);
+        tabucol(inst, solution.len()-1, stopping_criterion, sol_file);
     }
 }
