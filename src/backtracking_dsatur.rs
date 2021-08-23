@@ -28,16 +28,18 @@ struct VertexOrderingInfo {
     pub ordering: OrderingType,
     /// Vertex ID
     pub v: VertexId,
-    /// cost defined as (degree saturation, degree)
-    pub cost: (usize, usize)
+    /// degree of saturation
+    pub dsat: usize,
+    /// degree
+    pub d: usize,
 }
 
 impl Ord for VertexOrderingInfo {
     fn cmp(&self, other: &Self) -> Ordering {
         match self.ordering {
             OrderingType::DSATUR => {
-                self.cost.0.cmp(&other.cost.0)
-                    .then_with(|| self.cost.1.cmp(&other.cost.1))
+                self.dsat.cmp(&other.dsat)
+                    .then_with(|| self.d.cmp(&other.d))
             }
         }
     }
@@ -75,12 +77,17 @@ pub struct Node {
 
 impl BacktrackingDsaturSpace {
     /** creates a new backtracking Dsatur search space */
-    pub fn new(inst:Rc<Instance>) -> Self {
-        let mut ranked_vertices:Vec<VertexId> = (0..inst.n()).collect();
-        ranked_vertices.sort_by_key(|v| -(inst.adj(*v).len() as i64));
-        let mut vertex_ranks = vec![0;inst.n()];
-        for (i,v) in ranked_vertices.iter().enumerate() {
-            vertex_ranks[*v] = i;
+    pub fn new(inst:Rc<Instance>, ordering:OrderingType) -> Self {
+        let n = inst.n();
+        let colors = vec![None ; n];
+        let mut ordered_vertices = BinaryHeap::with_capacity(n);
+        for i in 0..n {
+            ordered_vertices.push(VertexOrderingInfo {
+                ordering: ordering.clone(),
+                v: i,
+                dsat: 0,
+                d: inst.adj(i).len(),
+            });
         }
         Self {
             inst,
