@@ -33,14 +33,27 @@ use dogs::combinators::pruning::PruningCombinator;
 use dogs::tree_search::beam_search::create_iterative_beam_search;
 
 
-// register modules
+/// read/write DIMACS formats
 mod dimacs;
+
+/// read/write CGSHOP formats
 mod cgshop;
+
+/// coloring instance, solutions and checker
 mod color;
 
+/// backtracking-based dsatur
+mod backtracking_dsatur;
+
+/// copying-based dsatur (experimental) 
 mod dsatur;
+
+/// TABUCOL implementation 
 mod tabucol;
+
+/// PARTIALCOL implementation
 mod partialcol;
+
 
 use color::Instance;
 use crate::dsatur::dsatur_greedy;
