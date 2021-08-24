@@ -65,7 +65,9 @@ pub struct BacktrackingDsaturSpace {
     /// ordered vertices (according to the ordering)
     ordered_vertices: BinaryHeap<VertexOrderingInfo>,
     /// colors[i]: color assigned to vertex i
-    colors: Vec<Option<usize>>
+    colors: Vec<Option<usize>>,
+    /// number of colors in the search state
+    nb_colors: usize,
 }
 
 /** represents a node structure */
@@ -89,10 +91,57 @@ impl BacktrackingDsaturSpace {
                 d: inst.adj(i).len(),
             });
         }
+        // TODO add the first vertex in the order to color 1
         Self {
             inst,
             ordered_vertices,
             colors,
+            nb_colors: 0,
         }
+    }
+}
+
+
+impl GuidedSpace<Node, OrderedFloat<f64>> for BacktrackingDsaturSpace {
+    fn guide(&mut self, node: &Node) -> OrderedFloat<f64> {
+        OrderedFloat(0.) // no guidance strategy needed yet
+    }
+}
+
+impl ToSolution<Node, Solution> for BacktrackingDsaturSpace {
+    fn solution(&mut self, node: &mut Node) -> Solution {
+        debug_assert!(self.goal(node));
+        // build the solution (res[i]: vertices assigned color i)
+        let mut res = vec![vec![]; self.nb_colors];
+        for (i,color) in self.colors.iter().enumerate() {
+            res[color.unwrap()].push(i);
+        }
+        res
+    }
+}
+
+impl SearchSpace<Node, i64> for BacktrackingDsaturSpace {
+
+    fn initial(&mut self) -> Node {
+        Node {
+            nb_colored: 1,
+        }
+    }
+
+    fn g_cost(&mut self, node: &Node) -> i64 { self.colors.len() as i64 }
+
+    fn bound(&mut self, node: &Node) -> i64 { self.colors.len() as i64 }
+
+    fn goal(&mut self, node: &Node) -> bool { node.nb_colored == self.inst.n() }
+
+    fn handle_new_best(&mut self, mut node: Node) -> Node {
+        // checks that the solution is valid (call checker)
+        let sol = self.solution(&mut node);
+        let checker_result = checker(&self.inst, &sol);
+        match &checker(&self.inst, &sol) {
+            CheckerResult::Ok(v) => assert_eq!(*v, self.colors.len()),
+            _ => panic!("invalid solution (error: {:?}).", checker_result)
+        }
+        node
     }
 }
