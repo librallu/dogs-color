@@ -6,7 +6,8 @@ Implements:
 use std::fs;
 
 use serde::{Serialize, Deserialize};
-use geo::{Coordinate, Line, intersects::Intersects};
+use geo::{Coordinate, Line};
+use geo::algorithm::line_intersection::line_intersection;
 
 use crate::color::Instance;
 
@@ -112,7 +113,8 @@ pub fn is_intersection(a:&(f32,f32,f32,f32), b:&(f32,f32,f32,f32)) -> bool {
         Coordinate {x:b.0, y:b.1},
         Coordinate {x:b.2, y:b.3}
     );
-    l1.intersects(&l2)
+    line_intersection(l1, l2) == None
+    // l1.intersects(&l2)
 }
 
 
