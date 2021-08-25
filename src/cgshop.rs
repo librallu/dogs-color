@@ -4,6 +4,7 @@ Implements:
  - procedures to produce an instance from a CGSHOP instance and vice-versa
 */
 use std::fs;
+use std::fs::File;
 
 use serde::{Serialize, Deserialize};
 use geo::{Coordinate, Line};
@@ -26,6 +27,8 @@ pub struct CGSHOPInstance {
     edge_i: Vec<usize>,
     /// edge_j[i]: second endpoint of the ith edge
     edge_j: Vec<usize>,
+    /// identifier of the instance
+    id: String,
 }
 
 
@@ -59,6 +62,9 @@ impl CGSHOPInstance {
 
     /// number of edges
     pub fn m(&self) -> usize { self.m }
+
+    /// instance id
+    pub fn id(&self) -> &str { &self.id }
 
     /// true iff segments a and b are in conflict
     pub fn conflict(&self, a:usize, b:usize) -> bool {
@@ -118,7 +124,7 @@ pub fn is_intersection(a:&(f32,f32,f32,f32), b:&(f32,f32,f32,f32)) -> bool {
 }
 
 
-/** data structure to represent a CGSHOP instance */
+/** data structure to represent a CGSHOP solution */
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CGSHOPSolution {
     /// solution type (should be "Solution_CGSHOP2022")
@@ -130,6 +136,19 @@ pub struct CGSHOPSolution {
     num_colors: usize,
     /// color list (color[e]: color of edge e)
     colors: Vec<usize>,
+}
+
+impl CGSHOPSolution {
+    pub fn new(instance:String, num_colors: usize, colors: Vec<usize>) -> Self {
+        Self {
+            sol_type: "Solution_CGSHOP2022".to_string(),
+            instance, num_colors, colors,
+        }
+    }
+
+    pub fn to_file(&self, filename:String) {
+
+    }
 }
 
 

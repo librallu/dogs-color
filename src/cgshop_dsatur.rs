@@ -3,7 +3,7 @@ use std::cmp::max;
 use ordered_float::OrderedFloat;
 use bit_set::BitSet;
 
-use crate::cgshop::CGSHOPInstance;
+use crate::cgshop::{CGSHOPInstance, CGSHOPSolution};
 
 /** implements an adapted DSATUR algorithm for the large CGSHOP instances
     1. sorts segments by length (the idea is: the largest probably has the more intersections)
@@ -17,7 +17,7 @@ pub fn cgshop_dsatur(inst:&CGSHOPInstance) {
     let mut adj_colors:Vec<BitSet> = vec![BitSet::default() ; m]; // adj_colors[s] -> colors s sees
     let mut nb_adj_colors:Vec<usize> = vec![0 ; m]; // nb_adj_colors[m] -> number of colors s sees.
     let mut nb_colored:usize = 0;
-    let mut nb_colors:usize = 0;
+    let mut last_color:usize = 0;
     while nb_colored < m {
         if nb_colored % 1000 == 0 {
             println!("{} / {}", nb_colored, m);
@@ -36,7 +36,7 @@ pub fn cgshop_dsatur(inst:&CGSHOPInstance) {
         while adj_colors[current_segment].contains(color) { color += 1; }
         colors[current_segment] = Some(color);
         nb_colored += 1;
-        nb_colors = max(nb_colors, color); // update nb colors
+        last_color = max(last_color, color); // update nb colors
         // check all its unasigned conflicting segments, and update their saturation information
         for conflict_segment in (0..m)
         .filter(|conflict_segment| colors[*conflict_segment] == None)
@@ -48,7 +48,15 @@ pub fn cgshop_dsatur(inst:&CGSHOPInstance) {
         }
     }
     // finished. Solution completed
+    let nb_colors = last_color+1;
     println!("nb colors: {}", nb_colors);
+    let solution = CGSHOPSolution::new(
+        inst.id().to_string(),
+        nb_colors,
+        colors.iter().map(|e| e.unwrap()).collect()
+    );
+    println!("{}", serde_json::to_string(&solution).unwrap());
+
 }
 
 
@@ -68,7 +76,16 @@ mod tests {
     #[test]
     fn test_read_instance_sqrm() {
         let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json"
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_2.instance.json"
+        );
+        cg_inst.display_statistics();
+        cgshop_dsatur(&cg_inst);
+    }
+
+    #[test]
+    fn test_read_instance_tiny() {
+        let cg_inst = CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json"
         );
         cg_inst.display_statistics();
         cgshop_dsatur(&cg_inst);
