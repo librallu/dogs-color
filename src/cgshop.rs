@@ -59,6 +59,18 @@ impl CGSHOPInstance {
     /// number of edges
     pub fn m(&self) -> usize { self.m }
 
+    /// true iff segments a and b are in conflict
+    pub fn conflict(&self, a:usize, b:usize) -> bool {
+        is_intersection(&self.coordinates(a), &self.coordinates(b))
+    }
+
+    /// squared length of a segment
+    pub fn squared_length(&self, i:usize) -> f32 {
+        let dx = self.x[self.edge_j[i]] - self.x[self.edge_i[i]];
+        let dy = self.y[self.edge_j[i]] - self.y[self.edge_i[i]];
+        dx*dx + dy*dy
+    }
+
     /// edge coordinates (x1,y1,x2,y2)
     pub fn edge_coordinates(&self) -> Vec<(f32,f32,f32,f32)> {
         (0..self.edge_i.len()).map(|i| {
@@ -68,6 +80,16 @@ impl CGSHOPInstance {
             let y2 = self.y[self.edge_j[i]];
             (x1, y1, x2, y2)
         }).collect()
+    }
+
+    /// edge coordinate for segment i (x1,y1,x2,y2)
+    pub fn coordinates(&self, i:usize) -> (f32,f32,f32,f32) {
+        (
+            self.x[self.edge_i[i]],
+            self.y[self.edge_i[i]],
+            self.x[self.edge_j[i]],
+            self.y[self.edge_j[i]],
+        )
     }
 
     /** displays some statistics of the instance */
@@ -117,6 +139,16 @@ mod tests {
     fn test_read_instance() {
         let cg_inst = CGSHOPInstance::from_file(
             "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json"
+        );
+        cg_inst.display_statistics();
+        let inst = cg_inst.to_graph_coloring_instance();
+        inst.display_statistics();
+    }
+
+    #[test]
+    fn test_read_instance_sqrm() {
+        let cg_inst = CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json"
         );
         cg_inst.display_statistics();
         let inst = cg_inst.to_graph_coloring_instance();

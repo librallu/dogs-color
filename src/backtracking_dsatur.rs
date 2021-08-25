@@ -81,7 +81,7 @@ impl BacktrackingDsaturSpace {
     /** creates a new backtracking Dsatur search space */
     pub fn new(inst:Rc<Instance>, ordering:OrderingType) -> Self {
         let n = inst.n();
-        let colors = vec![None ; n];
+        let mut colors = vec![None ; n];
         let mut ordered_vertices = BinaryHeap::with_capacity(n);
         for i in 0..n {
             ordered_vertices.push(VertexOrderingInfo {
@@ -91,7 +91,10 @@ impl BacktrackingDsaturSpace {
                 d: inst.adj(i).len(),
             });
         }
-        // TODO add the first vertex in the order to color 1
+        // add the first vertex in the order to color 1
+        let first_vertex = ordered_vertices.pop().unwrap().v;
+        colors[first_vertex] = Some(0);
+        // build the search space
         Self {
             inst,
             ordered_vertices,

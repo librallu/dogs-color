@@ -38,6 +38,8 @@ mod dimacs;
 
 /// read/write CGSHOP formats
 mod cgshop;
+/// DSATUR adapted for the large CGSHOP instances
+mod cgshop_dsatur;
 
 /// coloring instance, solutions and checker
 mod color;
