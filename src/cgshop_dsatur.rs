@@ -55,7 +55,7 @@ pub fn cgshop_dsatur(inst:&CGSHOPInstance) {
         nb_colors,
         colors.iter().map(|e| e.unwrap()).collect()
     );
-    println!("{}", serde_json::to_string(&solution).unwrap());
+    solution.to_file("tmp/");
 
 }
 
@@ -67,7 +67,7 @@ mod tests {
     #[test]
     fn test_read_instance() {
         let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_10K.instance.json"
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json"
         );
         cg_inst.display_statistics();
         cgshop_dsatur(&cg_inst);
@@ -76,7 +76,7 @@ mod tests {
     #[test]
     fn test_read_instance_sqrm() {
         let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_2.instance.json"
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json"
         );
         cg_inst.display_statistics();
         cgshop_dsatur(&cg_inst);

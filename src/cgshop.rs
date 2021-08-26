@@ -5,6 +5,7 @@ Implements:
 */
 use std::fs;
 use std::fs::File;
+use std::io::{BufReader, Write};
 
 use serde::{Serialize, Deserialize};
 use geo::{Coordinate, Line};
@@ -146,8 +147,21 @@ impl CGSHOPSolution {
         }
     }
 
-    pub fn to_file(&self, filename:String) {
+    pub fn from_file(filename:&str) -> Self {
+        let mut file = File::open(filename)
+            .expect("CGHSOPSolution.from_file: unable to open the file");
+        let reader = BufReader::new(file);
+        serde_json::from_reader(reader)
+            .expect("CGHSOPSolution.from_file: unable to serialize")
+    }
 
+    pub fn to_file(&self, filename_prefix:&str) {
+        let res_str = serde_json::to_string(self).unwrap();
+        let mut file = File::create(
+            format!("{}{}.sol.json", filename_prefix, self.instance.as_str())
+        ).expect("CGHSOPSolution.to_file: unable to open the file");
+        file.write_all(res_str.as_bytes())
+            .expect("CGHSOPSolution.to_file: unable to write in the file");
     }
 }
 
