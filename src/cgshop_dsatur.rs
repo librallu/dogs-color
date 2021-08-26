@@ -11,7 +11,7 @@ use crate::cgshop::{CGSHOPInstance, CGSHOPSolution};
     3. mark all its intersections (O(|Segments|)) seeing its color
     4. select the next segment seeing the most colors (break ties by segment length)
 */
-pub fn cgshop_dsatur(inst:&CGSHOPInstance) {
+pub fn cgshop_dsatur(inst:&CGSHOPInstance) -> usize {
     let m = inst.m(); // nb segments
     let mut colors:Vec<Option<usize>> = vec![None ; m]; // colors[s] -> color assigned to segment s
     let mut adj_colors:Vec<BitSet> = vec![BitSet::default() ; m]; // adj_colors[s] -> colors s sees
@@ -56,6 +56,7 @@ pub fn cgshop_dsatur(inst:&CGSHOPInstance) {
         colors.iter().map(|e| e.unwrap()).collect()
     );
     solution.to_file("tmp/");
+    nb_colors
 
 }
 
@@ -64,19 +65,34 @@ pub fn cgshop_dsatur(inst:&CGSHOPInstance) {
 mod tests {
     use super::*;
 
+    use std::rc::Rc;
+    use crate::tabucol::tabucol;
+    use dogs::search_algorithm::TimeStoppingCriterion;
+
     #[test]
-    fn test_read_instance() {
+    fn test_read_instance_visp() {
         let cg_inst = CGSHOPInstance::from_file(
             "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json"
+        );
+        cg_inst.display_statistics();
+        let nb_colors = cgshop_dsatur(&cg_inst);
+        let vcp_inst = Rc::new(cg_inst.to_graph_coloring_instance());
+        tabucol(vcp_inst, nb_colors, TimeStoppingCriterion::new(100.), None);
+    }
+
+    #[test]
+    fn test_read_instance_sqrm() {
+        let cg_inst = CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json"
         );
         cg_inst.display_statistics();
         cgshop_dsatur(&cg_inst);
     }
 
     #[test]
-    fn test_read_instance_sqrm() {
+    fn test_read_instance_sqrm_100K() {
         let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json"
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_100K_1.instance.json"
         );
         cg_inst.display_statistics();
         cgshop_dsatur(&cg_inst);

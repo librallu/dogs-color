@@ -21,9 +21,9 @@ pub struct CGSHOPInstance {
     /// number of edges
     m: usize,
     /// x coordinates for points
-    x: Vec<f32>,
+    x: Vec<f64>,
     /// y coordinates for points
-    y: Vec<f32>,
+    y: Vec<f64>,
     /// edge_i[i]: first endpoint of the ith edge
     edge_i: Vec<usize>,
     /// edge_j[i]: second endpoint of the ith edge
@@ -73,25 +73,21 @@ impl CGSHOPInstance {
     }
 
     /// squared length of a segment
-    pub fn squared_length(&self, i:usize) -> f32 {
+    pub fn squared_length(&self, i:usize) -> f64 {
         let dx = self.x[self.edge_j[i]] - self.x[self.edge_i[i]];
         let dy = self.y[self.edge_j[i]] - self.y[self.edge_i[i]];
         dx*dx + dy*dy
     }
 
     /// edge coordinates (x1,y1,x2,y2)
-    pub fn edge_coordinates(&self) -> Vec<(f32,f32,f32,f32)> {
+    pub fn edge_coordinates(&self) -> Vec<(f64,f64,f64,f64)> {
         (0..self.edge_i.len()).map(|i| {
-            let x1 = self.x[self.edge_i[i]];
-            let y1 = self.y[self.edge_i[i]];
-            let x2 = self.x[self.edge_j[i]];
-            let y2 = self.y[self.edge_j[i]];
-            (x1, y1, x2, y2)
+            self.coordinates(i)
         }).collect()
     }
 
     /// edge coordinate for segment i (x1,y1,x2,y2)
-    pub fn coordinates(&self, i:usize) -> (f32,f32,f32,f32) {
+    pub fn coordinates(&self, i:usize) -> (f64,f64,f64,f64) {
         (
             self.x[self.edge_i[i]],
             self.y[self.edge_i[i]],
@@ -110,8 +106,12 @@ impl CGSHOPInstance {
     }
 }
 
-/** true iff the lines defined by (x1,y1), (x2,y2) intersect */
-pub fn is_intersection(a:&(f32,f32,f32,f32), b:&(f32,f32,f32,f32)) -> bool {
+/**
+    true iff the lines defined by (x1,y1), (x2,y2) intersect
+    There exists an intersection if and only if:
+        - Collinear, and proper intersection (not at end points)
+*/
+pub fn is_intersection(a:&(f64,f64,f64,f64), b:&(f64,f64,f64,f64)) -> bool {
     let l1 = Line::new(
         Coordinate {x:a.0, y:a.1},
         Coordinate {x:a.2, y:a.3}
@@ -120,7 +120,15 @@ pub fn is_intersection(a:&(f32,f32,f32,f32), b:&(f32,f32,f32,f32)) -> bool {
         Coordinate {x:b.0, y:b.1},
         Coordinate {x:b.2, y:b.3}
     );
-    line_intersection(l1, l2) == None
+    match line_intersection(l1,l2) {
+        Some(intersection) => match intersection {
+            geo::line_intersection::LineIntersection::SinglePoint
+                {intersection:_, is_proper } => { is_proper },
+            geo::line_intersection::LineIntersection::Collinear { intersection:_ } => true,
+        },
+        None => false,
+    }
+    // line_intersection(l1, l2) != None
     // l1.intersects(&l2)
 }
 
@@ -169,6 +177,29 @@ impl CGSHOPSolution {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use std::rc::Rc;
+    use crate::tabucol::tabucol;
+    use dogs::search_algorithm::TimeStoppingCriterion;
+
+    #[test]
+    fn test_conflict() {
+        let l1 = (42146., 64522., 63387., 19658.);
+        let l2 = (66944., 32411., 42137., 48996.);
+        assert!(is_intersection(&l1, &l2));
+    }
+
+    #[test]
+    fn test_read_tiny() {
+        let cg_inst = CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json"
+        );
+        cg_inst.display_statistics();
+        assert_eq!(cg_inst.coordinates(0), (60941.,77185.,  42146.,64522.));
+        let vcp_inst = Rc::new(cg_inst.to_graph_coloring_instance());
+        tabucol(vcp_inst, 5, TimeStoppingCriterion::new(10.), None);
+
+    }
 
     #[test]
     fn test_read_instance() {
