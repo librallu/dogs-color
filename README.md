@@ -5,7 +5,8 @@ Discrete Optimization Global Search for the Graph Coloring problem
 # Features
 
 - [X] DIMACS format reading
-- [X] SOCG22 format reading
+- [X] SOCG22 instance & solution format reading & writing
+- [X] custom DSATUR algorithm (less memory requirement)
 
 # Algorithms
 
@@ -21,7 +22,6 @@ Discrete Optimization Global Search for the Graph Coloring problem
 
 # What's next (SOCG22 competition)
 
-- [ ] SOCG22 solution output compatibility
 
 
 # What's next (algorithms)?
