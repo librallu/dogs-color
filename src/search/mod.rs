@@ -1,5 +1,8 @@
 //! Search spaces for the graph coloring problem.
 
+/// greedy DSATUR algorithm
+pub mod dsatur_greedy;
+
 // /// backtracking-based dsatur
 // pub mod backtracking_dsatur;
 

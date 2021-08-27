@@ -26,5 +26,5 @@ debug = true # to be removed eventually
 # target-cpu="native" # optimizes for this cpu
 # panic = "abort" # better cache usage related to panics
 
-# [profile.test]
-# opt-level=3 # optimized for quick test on performance (should not be used by default)
+[profile.test]
+opt-level=3 # optimized for quick test on performance (should not be used by default)

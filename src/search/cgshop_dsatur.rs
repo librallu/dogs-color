@@ -72,7 +72,7 @@ mod tests {
     #[test]
     fn test_read_instance_visp() {
         let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_500K.instance.json"
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json"
         );
         cg_inst.display_statistics();
         let _nb_colors = cgshop_dsatur(&cg_inst);

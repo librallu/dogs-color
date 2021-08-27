@@ -40,7 +40,7 @@ pub struct CGSHOPInstance {
 impl ColoringInstance for CGSHOPInstance {
     fn nb_vertices(&self) -> usize { self.m }
 
-    fn degree(&self, _u:VertexId) -> usize { todo!() }
+    fn degree(&self, u:VertexId) -> usize { self.degrees[u] }
 
     fn neighbors(&self, u:VertexId) -> Vec<VertexId> {
         (0..self.m()).filter(move |v| *v != u)
@@ -122,10 +122,17 @@ impl CGSHOPInstance {
     /// computes the degrees for each edge
     fn compute_degrees(&mut self) {
         let mut degrees:Vec<usize> = vec![0 ; self.nb_vertices()];
-        for (i,d) in degrees.iter_mut().enumerate() {
-            *d = self.neighbors(i).len()
+        for i in 0..self.nb_vertices() {
+            if i % 1000 == 0 { println!("computed degrees for {} / {}...", i, self.nb_vertices()); }
+            for j in 0..i {
+                if self.are_adjacent(i, j) {
+                    degrees[i] += 1;
+                    degrees[j] += 1;
+                }
+            }
         }
         self.degrees = degrees;
+        println!("CGSHOP Instance: finished computing degrees.")
     }
 }
 
