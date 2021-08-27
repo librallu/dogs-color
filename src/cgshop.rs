@@ -87,7 +87,7 @@ impl CGSHOPInstance {
     pub fn m(&self) -> usize { self.m }
 
     /// instance id
-    pub fn id(&self) -> &str { &self.id }
+    pub fn id(&self) -> String { self.id.clone() }
 
     /// squared length of a segment
     pub fn squared_length(&self, i:usize) -> f64 {
@@ -182,6 +182,19 @@ impl CGSHOPSolution {
             sol_type: "Solution_CGSHOP2022".to_string(),
             instance, num_colors, colors,
         }
+    }
+
+    /// creates a solution from a solution
+    pub fn from_solution(instance:String, solution:&[Vec<VertexId>]) -> Self {
+        let nb_colors  = solution.len();
+        let n = solution.iter().map(|c| c.len()).sum();
+        let mut colors:Vec<usize> = vec![0 ; n];
+        for (i,c) in solution.iter().enumerate() {
+            for v in c {
+                colors[*v] = i;
+            }
+        }
+        Self::new(instance, nb_colors, colors)
     }
 
     /// reads a solution from a file

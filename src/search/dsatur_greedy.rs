@@ -61,7 +61,7 @@ pub fn dsatur_greedy(inst:Rc<dyn ColoringInstance>, show_completion:bool) -> Sol
 mod tests {
     use super::*;
 
-    use crate::cgshop::CGSHOPInstance;
+    use crate::cgshop::{CGSHOPInstance,CGSHOPSolution};
 
     #[test]
     fn test_read_instance_tiny() {
@@ -79,8 +79,10 @@ mod tests {
             "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json"
         ));
         cg_inst.display_statistics();
-        let solution = dsatur_greedy(cg_inst, true);
+        let solution = dsatur_greedy(cg_inst.clone(), true);
         println!("nb colors: {}", solution.len());
+        let cg_sol = CGSHOPSolution::from_solution(cg_inst.id(), &solution);
+        cg_sol.to_file("insts/CGSHOP_22_original/");
     }
 
     #[test]
@@ -107,6 +109,16 @@ mod tests {
     fn test_read_instance_visp_50k() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
             "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json"
+        ));
+        cg_inst.display_statistics();
+        let solution = dsatur_greedy(cg_inst, true);
+        println!("nb colors: {}", solution.len());
+    }
+
+    #[test]
+    fn test_read_instance_sqrm_100k() {
+        let cg_inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_100K_1.instance.json"
         ));
         cg_inst.display_statistics();
         let solution = dsatur_greedy(cg_inst, true);
