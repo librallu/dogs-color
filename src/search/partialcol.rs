@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use rand::Rng;
 use bit_set::BitSet;
 
-use crate::color::{Instance, Solution, VertexId, checker, CheckerResult};
+use crate::color::{CompactInstance, Solution, VertexId, checker, CheckerResult};
 
 
 /** PARTIALCOL algorithm (see: 10.1016/j.cor.2006.05.014)
@@ -44,7 +44,7 @@ Then tries to assign vertices to colors, uncoloring conflicting vertices.
 #[derive(Debug)]
 pub struct SearchState {
     /// reference instance
-    inst: Rc<Instance>,
+    inst: Rc<CompactInstance>,
     /// colors[v]: color of the vertex v
     colors: Vec<Option<usize>>,
     /// number of colors used
@@ -58,7 +58,7 @@ impl SearchState {
     /** Creates a new search state by creating color class after color class.
     Time complexity: O(n.m.c)
     */
-    pub fn initial_solution(inst:Rc<Instance>, nb_colors:usize) -> Self {
+    pub fn initial_solution(inst:Rc<CompactInstance>, nb_colors:usize) -> Self {
         let mut c = 0; // current number of colors
         let mut nb_colored = 0; // number of colored vertices
         let mut colored:BitSet<u64> = BitSet::default(); // which vertex have been colored
@@ -98,7 +98,7 @@ mod tests {
     #[test]
     fn test_initial_sol() {
         let inst = Rc::new(
-            Instance::from_file("insts/instances-dimacs1/le450_15a.col")
+            CompactInstance::from_file("insts/instances-dimacs1/le450_15a.col")
         );
         let state = SearchState::initial_solution(inst, 20);
         // println!("{:?}", state);

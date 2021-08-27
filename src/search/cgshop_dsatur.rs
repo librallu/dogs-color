@@ -72,18 +72,18 @@ mod tests {
     #[test]
     fn test_read_instance_visp() {
         let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json"
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_500K.instance.json"
         );
         cg_inst.display_statistics();
-        let nb_colors = cgshop_dsatur(&cg_inst);
-        let vcp_inst = Rc::new(cg_inst.to_graph_coloring_instance());
-        tabucol(vcp_inst, nb_colors, TimeStoppingCriterion::new(100.), None);
+        let _nb_colors = cgshop_dsatur(&cg_inst);
+        // let vcp_inst = Rc::new(cg_inst.to_graph_coloring_instance());
+        // tabucol(vcp_inst, nb_colors, TimeStoppingCriterion::new(100.), None);
     }
 
     #[test]
     fn test_read_instance_sqrm() {
         let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json"
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json"
         );
         cg_inst.display_statistics();
         cgshop_dsatur(&cg_inst);

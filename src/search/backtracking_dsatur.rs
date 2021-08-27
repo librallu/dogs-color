@@ -10,7 +10,7 @@ use dogs::search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSo
 use dogs::tree_search::beam_search::BeamSearch;
 use dogs::search_algorithm::{NeverStoppingCriterion, SearchAlgorithm};
 
-use crate::color::{Instance, Solution, VertexId, checker, CheckerResult};
+use crate::color::{CompactInstance, Solution, VertexId, checker, CheckerResult};
 
 
 /** Vertex ordering type */
@@ -61,7 +61,7 @@ Implements a backtracking search space for DSATUR.
 #[derive(Debug)]
 pub struct BacktrackingDsaturSpace {
     /// instance
-    inst: Rc<Instance>,
+    inst: Rc<CompactInstance>,
     /// ordered vertices (according to the ordering)
     ordered_vertices: BinaryHeap<VertexOrderingInfo>,
     /// colors[i]: color assigned to vertex i
@@ -79,7 +79,7 @@ pub struct Node {
 
 impl BacktrackingDsaturSpace {
     /** creates a new backtracking Dsatur search space */
-    pub fn new(inst:Rc<Instance>, ordering:OrderingType) -> Self {
+    pub fn new(inst:Rc<CompactInstance>, ordering:OrderingType) -> Self {
         let n = inst.n();
         let mut colors = vec![None ; n];
         let mut ordered_vertices = BinaryHeap::with_capacity(n);

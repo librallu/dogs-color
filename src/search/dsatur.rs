@@ -8,7 +8,7 @@ use dogs::search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSo
 use dogs::tree_search::beam_search::BeamSearch;
 use dogs::search_algorithm::{NeverStoppingCriterion, SearchAlgorithm};
 
-use crate::color::{Instance, Solution, VertexId, checker, CheckerResult};
+use crate::color::{CompactInstance, Solution, VertexId, checker, CheckerResult};
 
 /**
 Implements a DSATUR tree search space.
@@ -17,7 +17,7 @@ Overall, select a node with maximum degree neighbors (break ties by degree)
 */
 #[derive(Debug)]
 pub struct DSATURSpace {
-    inst: Rc<Instance>,
+    inst: Rc<CompactInstance>,
     /// vertex_ranks[v]: rank of vertex v sorted by degree
     vertex_ranks: Vec<usize>,
     /// ranked_vertices[i]: vertex ranked at position i sorted by degree
@@ -41,7 +41,7 @@ impl DSATURSpace {
     /**
     creates a DSATUR search space. Sorts the vertices by decreasing degree
     */
-    pub fn new(inst:Rc<Instance>) -> Self {
+    pub fn new(inst:Rc<CompactInstance>) -> Self {
         let mut ranked_vertices:Vec<VertexId> = (0..inst.n()).collect();
         ranked_vertices.sort_by_key(|v| -(inst.adj(*v).len() as i64));
         let mut vertex_ranks = vec![0;inst.n()];
@@ -172,7 +172,7 @@ impl TotalNeighborGeneration<Node> for DSATURSpace {
 
 
 /// runs a DSATUR greedy algorithm
-pub fn dsatur_greedy(inst:Rc<Instance>) -> Solution {
+pub fn dsatur_greedy(inst:Rc<CompactInstance>) -> Solution {
     let space = Rc::new(RefCell::new(DSATURSpace::new(inst)));
     let mut search = BeamSearch::new(space.clone(), 1);
     search.run(NeverStoppingCriterion::default());
@@ -189,7 +189,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_dsatur_constructor() {
-        let inst = Instance::from_file("insts/test1");
+        let inst = CompactInstance::from_file("insts/test1");
         let space = DSATURSpace::new(Rc::new(inst));
         println!("{:?}", space);
         assert_eq!(space.vertex_ranks[0], 0);

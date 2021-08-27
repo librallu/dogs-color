@@ -1,67 +1,3 @@
-//! DOGS implementation of the Graph Coloring problem
-
-
-// #![warn(clippy::all, clippy::pedantic)]
-// useful additional warnings if docs are missing, or crates imported but unused, etc.
-#![warn(missing_debug_implementations)]
-#![warn(missing_docs)]
-#![warn(trivial_casts, trivial_numeric_casts)]
-#![warn(unsafe_code)]
-#![warn(unused_extern_crates)]
-#![warn(variant_size_differences)]
-
-// not sure if already by default in clippy
-#![warn(clippy::similar_names)]
-#![warn(clippy::shadow_unrelated)]
-#![warn(clippy::shadow_same)]
-#![warn(clippy::shadow_reuse)]
-
-#[macro_use]
-extern crate clap;
-use clap::App;
-use dogs::search_space::SearchSpace;
-
-use std::rc::Rc;
-use std::cell::RefCell;
-
-use dogs::metric_logger::MetricLogger;
-use dogs::search_algorithm::{SearchAlgorithm, TimeStoppingCriterion};
-// use dogs::search_space::{SearchSpace, ToSolution};
-use dogs::combinators::stats::StatTsCombinator;
-use dogs::combinators::pruning::PruningCombinator;
-// use dogs::tree_search::algo::beam_search::BeamSearch;
-use dogs::tree_search::beam_search::create_iterative_beam_search;
-
-
-/// read/write DIMACS formats
-mod dimacs;
-
-/// read/write CGSHOP formats
-mod cgshop;
-/// DSATUR adapted for the large CGSHOP instances
-mod cgshop_dsatur;
-
-/// coloring instance, solutions and checker
-mod color;
-
-/// backtracking-based dsatur
-mod backtracking_dsatur;
-
-/// copying-based dsatur (experimental) 
-mod dsatur;
-
-/// TABUCOL implementation 
-mod tabucol;
-
-/// PARTIALCOL implementation
-mod partialcol;
-
-
-use color::Instance;
-use crate::dsatur::dsatur_greedy;
-use crate::tabucol::tabucol;
-
-
 /**
 reads an instance, takes the time limit as a parameter, and solves the problem.
 
@@ -94,7 +30,7 @@ pub fn main() {
         }
     };
     println!("reading instance: {}...", inst_filename);
-    let inst = Rc::new(Instance::from_file(inst_filename));
+    let inst = Rc::new(CompactInstance::from_file(inst_filename));
     inst.display_statistics();
     // println!("{:?}", inst);
     println!("time limit: {}", t);

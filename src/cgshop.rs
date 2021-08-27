@@ -11,7 +11,8 @@ use serde::{Serialize, Deserialize};
 use geo::{Coordinate, Line};
 use geo::algorithm::line_intersection::line_intersection;
 
-use crate::color::Instance;
+use crate::color::{VertexId, ColoringInstance};
+use crate::compact_instance::CompactInstance;
 
 /** data structure to represent a CGSHOP instance */
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -30,6 +31,25 @@ pub struct CGSHOPInstance {
     edge_j: Vec<usize>,
     /// identifier of the instance
     id: String,
+    /// degrees if they are computed of each segment
+    #[serde(skip)]
+    degrees: Vec<usize>,
+}
+
+
+impl ColoringInstance for CGSHOPInstance {
+    fn nb_vertices(&self) -> usize { self.m }
+
+    fn degree(&self, _u:VertexId) -> usize { todo!() }
+
+    fn neighbors(&self, u:VertexId) -> Vec<VertexId> {
+        (0..self.m()).filter(move |v| *v != u)
+            .filter(|v| self.are_adjacent(u, *v)).collect()
+    }
+
+    fn are_adjacent(&self, u:VertexId, v:VertexId) -> bool {
+        is_intersection(&self.coordinates(u), &self.coordinates(v))
+    }
 }
 
 
@@ -38,12 +58,14 @@ impl CGSHOPInstance {
     pub fn from_file(filename:&str) -> Self {
         let str = fs::read_to_string(filename)
             .expect("Error while reading the file...");
-        serde_json::from_str(&str)
-            .expect("Error while deserializing the json file")
+        let mut res:Self = serde_json::from_str(&str)
+            .expect("Error while deserializing the json file");
+        res.compute_degrees();
+        res
     }
 
     /** converts to a graph coloring instance. */
-    pub fn to_graph_coloring_instance(&self) -> Instance {
+    pub fn to_graph_coloring_instance(&self) -> CompactInstance {
         let nb_vertices = self.m();
         let edge_coordinates = self.edge_coordinates();
         let mut adj_list:Vec<Vec<usize>> = vec![vec![] ; nb_vertices];
@@ -55,7 +77,7 @@ impl CGSHOPInstance {
                 }
             }
         }
-        Instance::new(adj_list)
+        CompactInstance::new(adj_list)
     }
 
     /// number of vertices
@@ -66,11 +88,6 @@ impl CGSHOPInstance {
 
     /// instance id
     pub fn id(&self) -> &str { &self.id }
-
-    /// true iff segments a and b are in conflict
-    pub fn conflict(&self, a:usize, b:usize) -> bool {
-        is_intersection(&self.coordinates(a), &self.coordinates(b))
-    }
 
     /// squared length of a segment
     pub fn squared_length(&self, i:usize) -> f64 {
@@ -100,9 +117,15 @@ impl CGSHOPInstance {
     pub fn display_statistics(&self) {
         println!("\t{:>25}{:>10}", "nb vertices:", self.n());
         println!("\t{:>25}{:>10}", "nb edges:",    self.m());
-        // for (x1,y1,x2,y2) in self.edge_coordinates() {
-        //     println!("{:.2}\t{:.2} | {:.2}\t{:.2}", x1,y1, x2,y2);
-        // }
+    }
+
+    /// computes the degrees for each edge
+    fn compute_degrees(&mut self) {
+        let mut degrees:Vec<usize> = vec![0 ; self.nb_vertices()];
+        for (i,d) in degrees.iter_mut().enumerate() {
+            *d = self.neighbors(i).len()
+        }
+        self.degrees = degrees;
     }
 }
 
@@ -128,8 +151,6 @@ pub fn is_intersection(a:&(f64,f64,f64,f64), b:&(f64,f64,f64,f64)) -> bool {
         },
         None => false,
     }
-    // line_intersection(l1, l2) != None
-    // l1.intersects(&l2)
 }
 
 
@@ -148,6 +169,7 @@ pub struct CGSHOPSolution {
 }
 
 impl CGSHOPSolution {
+    /// creates a solution from a file, given a number of colors and the assignemnt
     pub fn new(instance:String, num_colors: usize, colors: Vec<usize>) -> Self {
         Self {
             sol_type: "Solution_CGSHOP2022".to_string(),
@@ -155,14 +177,16 @@ impl CGSHOPSolution {
         }
     }
 
+    /// reads a solution from a file
     pub fn from_file(filename:&str) -> Self {
-        let mut file = File::open(filename)
+        let file = File::open(filename)
             .expect("CGHSOPSolution.from_file: unable to open the file");
         let reader = BufReader::new(file);
         serde_json::from_reader(reader)
             .expect("CGHSOPSolution.from_file: unable to serialize")
     }
 
+    /// writes the solution to a file
     pub fn to_file(&self, filename_prefix:&str) {
         let res_str = serde_json::to_string(self).unwrap();
         let mut file = File::create(
@@ -178,10 +202,6 @@ impl CGSHOPSolution {
 mod tests {
     use super::*;
 
-    use std::rc::Rc;
-    use crate::tabucol::tabucol;
-    use dogs::search_algorithm::TimeStoppingCriterion;
-
     #[test]
     fn test_conflict() {
         let l1 = (42146., 64522., 63387., 19658.);
@@ -196,9 +216,6 @@ mod tests {
         );
         cg_inst.display_statistics();
         assert_eq!(cg_inst.coordinates(0), (60941.,77185.,  42146.,64522.));
-        let vcp_inst = Rc::new(cg_inst.to_graph_coloring_instance());
-        tabucol(vcp_inst, 5, TimeStoppingCriterion::new(10.), None);
-
     }
 
     #[test]

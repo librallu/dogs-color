@@ -12,7 +12,7 @@ use dogs::search_space::{
 use dogs::combinators::tabu::TabuCombinator;
 use dogs::tree_search::greedy::Greedy;
 
-use crate::color::{Instance, Solution, VertexId, checker, CheckerResult};
+use crate::color::{CompactInstance, Solution, VertexId, checker, CheckerResult};
 
 
 /**
@@ -114,7 +114,7 @@ main procedure:
 #[derive(Debug)]
 pub struct SearchState {
     /// reference instance
-    inst: Rc<Instance>,
+    inst: Rc<CompactInstance>,
     /// colors[v]: color of the vertex v
     colors: Vec<usize>,
     /// number of colors used
@@ -129,7 +129,7 @@ impl SearchState {
     /**
     Creates a new search state with a random solution using nb_colors
     */
-    pub fn random_solution(inst:Rc<Instance>, nb_colors:usize) -> Self {
+    pub fn random_solution(inst:Rc<CompactInstance>, nb_colors:usize) -> Self {
         let mut rng = rand::thread_rng();
         let mut colors:Vec<usize> = Vec::with_capacity(inst.n());
         let mut nb_neigh_colors = vec![ vec![0 ; nb_colors] ; inst.n()];
@@ -153,7 +153,7 @@ impl SearchState {
     Creates a new search state from an existing solution.
     Removes the color with the less vertices and replace it by random other colors
     */
-    pub fn from_solution(inst:&Instance, sol:Solution) -> Self {
+    pub fn from_solution(inst:&CompactInstance, sol:Solution) -> Self {
         todo!()
     }
 
@@ -270,7 +270,7 @@ impl TotalNeighborGeneration<Node> for SearchState {
 Runs a tabucol algorithm. Given an instance and an initial number of colors, run the search algorithm until the stopping criterion is reached.
 Optionnaly, a filename is given to export the solution
 */
-pub fn tabucol<Stopping:StoppingCriterion>(inst:Rc<Instance>, nb_initial_colors:usize, stopping_criterion:Stopping, solution_filename:Option<String>) {
+pub fn tabucol<Stopping:StoppingCriterion>(inst:Rc<CompactInstance>, nb_initial_colors:usize, stopping_criterion:Stopping, solution_filename:Option<String>) {
     let mut nb_colors = nb_initial_colors;
     while !stopping_criterion.is_finished() {
         let search_state = Rc::new(RefCell::new(
@@ -323,7 +323,7 @@ mod tests {
 
     #[test]
     fn test_root_node() {
-        let inst = Rc::new(Instance::from_file("insts/instances-dimacs1/le450_15a.col"));
+        let inst = Rc::new(CompactInstance::from_file("insts/instances-dimacs1/le450_15a.col"));
         let mut search_state = SearchState::random_solution(inst, 20);
         let mut initial_node = search_state.initial();
         println!("{:?}", initial_node);
@@ -334,7 +334,7 @@ mod tests {
 
     #[test]
     fn test_simple_descent() {
-        let inst = Rc::new(Instance::from_file("insts/instances-dimacs1/le450_15a.col"));
+        let inst = Rc::new(CompactInstance::from_file("insts/instances-dimacs1/le450_15a.col"));
         let mut search_state = SearchState::random_solution(inst, 17);
         let mut current_node = search_state.initial();
         println!("{:?}", current_node);
@@ -353,7 +353,7 @@ mod tests {
 
     #[test]
     fn test_greedy() {
-        let inst = Rc::new(Instance::from_file("insts/instances-dimacs1/DSJC125.9.col"));
+        let inst = Rc::new(CompactInstance::from_file("insts/instances-dimacs1/DSJC125.9.col"));
         let nb_initial_colors:usize = 46;
         let logger = Rc::new(MetricLogger::default());
         let search_state = Rc::new(RefCell::new(
@@ -374,7 +374,7 @@ mod tests {
 
     #[test]
     fn test_metaheuristic() {
-        let inst = Rc::new(Instance::from_file("insts/instances-dimacs1/le450_15a.col"));
+        let inst = Rc::new(CompactInstance::from_file("insts/instances-dimacs1/le450_15a.col"));
         let nb_initial_colors:usize = 20;
         let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3.);
         tabucol(inst, nb_initial_colors, stopping_criterion, None);
