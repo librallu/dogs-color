@@ -10,8 +10,9 @@ Discrete Optimization Global Search for the Graph Coloring problem
 
 # Algorithms
 
-- [X] DSATUR simple greedy & branch-and-bound
-- [X] RLF implementation (see https://www.gerad.ca/~alainh/RLFPaper.pdf)
+- [X] DSATUR greedy
+- [X] RLF greedy (see https://www.gerad.ca/~alainh/RLFPaper.pdf)
+- [X] simple CLIQUE greedy algorithm
 - [X] TabuCol algorithm (https://link.springer.com/content/pdf/10.1007/BF02239976.pdf)
 
 

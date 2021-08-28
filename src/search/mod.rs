@@ -6,6 +6,9 @@ pub mod greedy_dsatur;
 /// Recursive Largest First algorithm (RLF)
 pub mod greedy_rlf;
 
+/// greedy that finds a clique of "large" size
+pub mod greedy_clique;
+
 // /// backtracking-based dsatur
 // pub mod backtracking_dsatur;
 
