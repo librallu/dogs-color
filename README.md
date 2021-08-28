@@ -11,23 +11,18 @@ Discrete Optimization Global Search for the Graph Coloring problem
 # Algorithms
 
 - [X] DSATUR simple greedy & branch-and-bound
+- [X] RLF implementation (see https://www.gerad.ca/~alainh/RLFPaper.pdf)
 - [X] TabuCol algorithm (https://link.springer.com/content/pdf/10.1007/BF02239976.pdf)
 
 
-# What's next (DIMACS format)?
+# What's next (Coloring instances)?
 
 - [ ] Compute more instance metrics (see https://doi.org/10.1016/j.cor.2013.11.015)
-- [ ] Write DIMACS format
-
-
-# What's next (SOCG22 competition)
-
 
 
 # What's next (algorithms)?
 
 - [ ] PARTIALCOL (see https://doi.org/10.1016/j.cor.2006.05.014)
-- [ ] RLF implementation (see https://www.gerad.ca/~alainh/RLFPaper.pdf)
 - [ ] Backtracking DSATUR (see https://webdocs.cs.ualberta.ca/~joe/Coloring/)
 - [ ] MACOL (see: http://azadproject.ir/wp-content/uploads/2013/12/2010-O6-A-memetic-algorithm-for-graph-coloring.pdf)
 - [ ] other local search moves (hill climbing)

@@ -61,7 +61,7 @@ pub fn greedy_dsatur(inst:Rc<dyn ColoringInstance>, show_completion:bool) -> Sol
 mod tests {
     use super::*;
 
-    use crate::cgshop::{CGSHOPInstance,CGSHOPSolution};
+    use crate::cgshop::CGSHOPInstance;
 
     #[test]
     fn test_read_instance_tiny() {
