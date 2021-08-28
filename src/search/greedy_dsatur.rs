@@ -16,7 +16,7 @@ parameters:
  - inst: reference to an instance
  - show_completion: if true, print progress towards the coloring (useful to indicate the progression)
 */
-pub fn dsatur_greedy(inst:Rc<dyn ColoringInstance>, show_completion:bool) -> Solution {
+pub fn greedy_dsatur(inst:Rc<dyn ColoringInstance>, show_completion:bool) -> Solution {
     let n:usize = inst.nb_vertices();
     let mut colors:Vec<Option<usize>> = vec![None ; n]; // colors[v] -> color assigned to vertex v
     let mut adj_colors:Vec<BitSet> = vec![BitSet::default() ; n]; // adj_colors[n] -> colors n sees
@@ -69,7 +69,7 @@ mod tests {
             "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json"
         ));
         cg_inst.display_statistics();
-        let solution = dsatur_greedy(cg_inst, false);
+        let solution = greedy_dsatur(cg_inst, false);
         println!("nb colors: {}", solution.len());
     }
 
@@ -79,10 +79,8 @@ mod tests {
             "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json"
         ));
         cg_inst.display_statistics();
-        let solution = dsatur_greedy(cg_inst.clone(), true);
+        let solution = greedy_dsatur(cg_inst, true);
         println!("nb colors: {}", solution.len());
-        let cg_sol = CGSHOPSolution::from_solution(cg_inst.id(), &solution);
-        cg_sol.to_file("insts/CGSHOP_22_original/");
     }
 
     #[test]
@@ -91,7 +89,17 @@ mod tests {
             "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json"
         ));
         cg_inst.display_statistics();
-        let solution = dsatur_greedy(cg_inst, true);
+        let solution = greedy_dsatur(cg_inst, true);
+        println!("nb colors: {}", solution.len());
+    }
+
+    #[test]
+    fn test_read_instance_sqrm_10k() {
+        let cg_inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json"
+        ));
+        cg_inst.display_statistics();
+        let solution = greedy_dsatur(cg_inst, true);
         println!("nb colors: {}", solution.len());
     }
 
@@ -101,7 +109,7 @@ mod tests {
             "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_2.instance.json"
         ));
         cg_inst.display_statistics();
-        let solution = dsatur_greedy(cg_inst, true);
+        let solution = greedy_dsatur(cg_inst, true);
         println!("nb colors: {}", solution.len());
     }
 
@@ -111,7 +119,7 @@ mod tests {
             "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json"
         ));
         cg_inst.display_statistics();
-        let solution = dsatur_greedy(cg_inst, true);
+        let solution = greedy_dsatur(cg_inst, true);
         println!("nb colors: {}", solution.len());
     }
 
@@ -121,7 +129,7 @@ mod tests {
             "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_100K_1.instance.json"
         ));
         cg_inst.display_statistics();
-        let solution = dsatur_greedy(cg_inst, true);
+        let solution = greedy_dsatur(cg_inst, true);
         println!("nb colors: {}", solution.len());
     }
 }

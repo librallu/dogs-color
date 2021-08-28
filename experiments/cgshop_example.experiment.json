@@ -1,0 +1,22 @@
+{
+    "experiment_name":   "cgshop_example",
+    "nb_parallel_tasks": 4,
+    "fallback_threads": 1,
+    "instance_list":     "../insts/cgshop_22_examples.csv",
+    "output_prefix":     ".",
+    "solvers": [
+        {
+            "name": "DSATUR",
+            "exe_path": "../target/release/dsatur_greedy",
+            "params": [
+                {"name":"instance", "values":["#{instance_path}"]},
+                {"name":"time",     "values":["#{time_limit}"]},
+                {"name":"perf",     "values":["#{file_prefix}.stats.json"]},
+                {"name":"solution", "values":["#{file_prefix}.sol"]},
+                {"name":"type",     "values":["cgshop"]}
+            ]
+        }
+    ],
+    "analysis": {
+    }
+}

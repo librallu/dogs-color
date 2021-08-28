@@ -1,7 +1,10 @@
 //! Search spaces for the graph coloring problem.
 
 /// greedy DSATUR algorithm
-pub mod dsatur_greedy;
+pub mod greedy_dsatur;
+
+/// Recursive Largest First algorithm (RLF)
+pub mod greedy_rlf;
 
 // /// backtracking-based dsatur
 // pub mod backtracking_dsatur;

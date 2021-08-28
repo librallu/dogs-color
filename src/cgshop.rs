@@ -131,6 +131,7 @@ impl CGSHOPInstance {
             self.degrees = serde_json::from_str(&str)
                 .expect("Error while deserializing the json file");
             println!("reusing the cached degrees.");
+            return;
         }
         println!("CGSHOP Instance: computing degrees...");
         let n = self.nb_vertices();

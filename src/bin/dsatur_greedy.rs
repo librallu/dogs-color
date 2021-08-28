@@ -3,7 +3,7 @@ use std::time::Instant;
 use clap::{App, load_yaml};
 use serde_json::json;
 
-use dogs_color::search::dsatur_greedy::dsatur_greedy;
+use dogs_color::search::greedy_dsatur::greedy_dsatur;
 use dogs_color::util::{read_params, export_results};
 
 
@@ -22,7 +22,7 @@ pub fn main() {
 
     // solve it
     let t_start = Instant::now();
-    let solution = dsatur_greedy(instance.clone(), true);
+    let solution = greedy_dsatur(instance.clone(), true);
     let duration = t_start.elapsed().as_secs_f32();
     let nb_colors = solution.len();
     println!("DSATUR took {:.3} seconds. Nb colors: {}", duration, nb_colors);
