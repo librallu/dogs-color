@@ -52,8 +52,8 @@ impl ColoringInstance for CGSHOPInstance {
     }
 
     fn display_statistics(&self) {
-        println!("\t{:>25}{:>10}", "nb vertices:", self.n());
-        println!("\t{:>25}{:>10}", "nb edges:",    self.m());
+        println!("{:<10} vertices", self.n());
+        println!("{:<10} segments", self.m());
         // println!("\tdegrees: {:?}", self.degrees);
     }
 
@@ -125,11 +125,14 @@ impl CGSHOPInstance {
 
     /// computes the degrees for each edge
     fn compute_degrees(&mut self) {
-        let mut degrees:Vec<usize> = vec![0 ; self.nb_vertices()];
-        for i in 0..self.nb_vertices() {
-            if i % 1000 == 0 { println!("computed degrees for {} / {}...", i, self.nb_vertices()); }
+        let n = self.nb_vertices();
+        let mut degrees:Vec<usize> = vec![0 ; n];
+        for i in 0..n {
+            let mut current_neighbors = Vec::new();
+            if i % 1000 == 0 { println!("computed degrees for {} / {}...", i, n); }
             for j in 0..i {
                 if self.are_adjacent(i, j) {
+                    current_neighbors.push(j);
                     degrees[i] += 1;
                     degrees[j] += 1;
                 }

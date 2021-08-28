@@ -19,7 +19,7 @@ pub fn read_params(main_args:ArgMatches) -> (String, Rc<dyn ColoringInstance>, f
     let sol_file: Option<String> = match main_args.value_of("solution") {
         None => None,
         Some(e) => {
-            println!("\t printing solutions in: {}", e);
+            println!("printing solutions in: {}", e);
             Some(e.to_string())
         }
     };
@@ -27,21 +27,22 @@ pub fn read_params(main_args:ArgMatches) -> (String, Rc<dyn ColoringInstance>, f
     let perf_file: Option<String> = match main_args.value_of("perf") {
         None => None,
         Some(e) => {
-            println!("\t printing perfs in: {}\n", e);
+            println!("printing perfs in: {}\n", e);
             Some(e.to_string())
         }
     };
     // read instance file
     let instance:Rc<dyn ColoringInstance> = match instance_type {
         "dimacs" => { // read DIMACS instance
-            Rc::new(CGSHOPInstance::from_file(inst_filename))
+            Rc::new(CompactInstance::from_file(inst_filename))
         },
         "cgshop" => { // read CGSHOP instance
-            Rc::new(CompactInstance::from_file(inst_filename))
+            Rc::new(CGSHOPInstance::from_file(inst_filename))
         },
         _ => panic!("instance type unknown {}", instance_type)
     };
     instance.display_statistics();
+    println!("=======================");
     (inst_filename.to_string(), instance, t, sol_file, perf_file)
 }
 
