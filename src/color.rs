@@ -23,6 +23,12 @@ pub trait ColoringInstance {
 
     /// returns true iff u and v are adjacent
     fn are_adjacent(&self, u:VertexId, v:VertexId) -> bool;
+
+    /// displays various information about the instance
+    fn display_statistics(&self) {}
+
+    /// writes a solution into a file. each line corresponds to a color.
+    fn write_solution(&self, filename:&str, solution:&[Vec<usize>]);
 }
 
 

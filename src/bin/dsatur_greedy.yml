@@ -1,0 +1,40 @@
+name: dsatur_greedy
+version: "1.0"
+author: Luc Libralesso <libralesso.l@gmail.com>
+about: DSATUR greedy to solve the graph coloring problem
+args:
+    - instance:
+        long: instance
+        short: i
+        value_name: INST_FILE
+        help: Instance file
+        required: true
+        takes_value: true
+    - type:
+        long: type
+        value_name: TYPE
+        help: Instance type (dimacs, cgshop)
+        required: true
+        takes_value: true
+        possible_values:
+          - dimacs
+          - cgshop
+    - time:
+        long: time
+        short: t
+        help: Time in seconds to solve the instance
+        value_name: TIME
+        required: true
+        takes_value: true
+    - solution:
+        long: solution
+        short: s
+        help: "solution file where to export the results"
+        value_name: SOL_FILE
+        takes_value: true
+    - perf:
+        long: perf
+        short: p
+        help: "performance profile json file where to export the search statistics"
+        value_name: PERF_FILE
+        takes_value: true

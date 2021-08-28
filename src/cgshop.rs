@@ -50,6 +50,16 @@ impl ColoringInstance for CGSHOPInstance {
     fn are_adjacent(&self, u:VertexId, v:VertexId) -> bool {
         is_intersection(&self.coordinates(u), &self.coordinates(v))
     }
+
+    fn display_statistics(&self) {
+        println!("\t{:>25}{:>10}", "nb vertices:", self.n());
+        println!("\t{:>25}{:>10}", "nb edges:",    self.m());
+        // println!("\tdegrees: {:?}", self.degrees);
+    }
+
+    fn write_solution(&self, filename:&str, solution:&[Vec<usize>]) {
+        CGSHOPSolution::from_solution(self.id(), solution).to_file(filename);
+    }
 }
 
 
@@ -111,12 +121,6 @@ impl CGSHOPInstance {
             self.x[self.edge_j[i]],
             self.y[self.edge_j[i]],
         )
-    }
-
-    /** displays some statistics of the instance */
-    pub fn display_statistics(&self) {
-        println!("\t{:>25}{:>10}", "nb vertices:", self.n());
-        println!("\t{:>25}{:>10}", "nb edges:",    self.m());
     }
 
     /// computes the degrees for each edge
@@ -207,11 +211,10 @@ impl CGSHOPSolution {
     }
 
     /// writes the solution to a file
-    pub fn to_file(&self, filename_prefix:&str) {
+    pub fn to_file(&self, filename:&str) {
         let res_str = serde_json::to_string(self).unwrap();
-        let mut file = File::create(
-            format!("{}{}.sol.json", filename_prefix, self.instance.as_str())
-        ).expect("CGHSOPSolution.to_file: unable to open the file");
+        let mut file = File::create(filename)
+            .expect("CGHSOPSolution.to_file: unable to open the file");
         file.write_all(res_str.as_bytes())
             .expect("CGHSOPSolution.to_file: unable to write in the file");
     }

@@ -22,12 +22,14 @@ pub mod color;
 /// read/write DIMACS formats
 pub mod dimacs;
 
-/// read/write CGSHOP instances & solutions
+/// read/write CGSHOP instances & solutions (specialized for very large coloring instances)
 pub mod cgshop;
 
 /// compact instance (use this for small-medium sized instances)
 pub mod compact_instance;
 
+/// helper and utility methods for executables
+pub mod util;
 
 /// search spaces for the graph coloring problem
 pub mod search;

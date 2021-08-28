@@ -32,6 +32,26 @@ impl ColoringInstance for CompactInstance {
             Some(matrix) => { matrix[u].contains(v) } // otherwise, use it
         }
     }
+
+    fn display_statistics(&self) {
+        println!("\t{} \t vertices", self.nb_vertices());
+        println!("\t{} \t edges", self.nb_edges());
+        let degrees:Vec<usize> = (0..self.nb_vertices()).map(|i|{ self.degree(i) }).collect();
+        println!("\t{} \t min degree", degrees.iter().min().unwrap());
+        println!("\t{} \t max degree", degrees.iter().max().unwrap());
+        match self.adj_matrix {
+            None => {},
+            Some(_) => println!("\tadj matrix computed")
+        }
+    }
+
+    /** writes a solution into a file. each line corresponds to a color. */
+    fn write_solution(&self, filename:&str, solution:&[Vec<usize>]) {
+        fs::write(filename, self.solution_to_string(solution))
+            .unwrap_or_else(|_|
+                panic!("write_solution: unable to write the solution in {}", filename)
+            );
+    }
 }
 
 
@@ -75,19 +95,6 @@ impl CompactInstance {
         Self::new(adj_list)
     }
 
-    /// print statistics of the instance
-    pub fn display_statistics(&self) {
-        println!("\t{} \t vertices", self.nb_vertices());
-        println!("\t{} \t edges", self.nb_edges());
-        let degrees:Vec<usize> = (0..self.nb_vertices()).map(|i|{ self.degree(i) }).collect();
-        println!("\t{} \t min degree", degrees.iter().min().unwrap());
-        println!("\t{} \t max degree", degrees.iter().max().unwrap());
-        match self.adj_matrix {
-            None => {},
-            Some(_) => println!("\tadj matrix computed")
-        }
-    }
-
     /// if called, populate the adj_matrix
     pub fn populate_adj_matrix(&mut self) {
         let mut res = vec![BitSet::default(); self.n];
@@ -109,14 +116,6 @@ impl CompactInstance {
             res += "\n";
         } 
         res
-    }
-
-    /** writes a solution into a file. each line corresponds to a color. */
-    pub fn write_solution(&self, filename:&str, solution:&[Vec<usize>]) {
-        fs::write(filename, self.solution_to_string(solution))
-            .unwrap_or_else(|_|
-                panic!("write_solution: unable to write the solution in {}", filename)
-            );
     }
 }
 
