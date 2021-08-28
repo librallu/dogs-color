@@ -10,6 +10,7 @@ use std::io::{BufReader, Write};
 use serde::{Serialize, Deserialize};
 use geo::{Coordinate, Line};
 use geo::algorithm::line_intersection::line_intersection;
+use serde_json::json;
 
 use crate::color::{VertexId, ColoringInstance};
 use crate::compact_instance::CompactInstance;
@@ -125,6 +126,13 @@ impl CGSHOPInstance {
 
     /// computes the degrees for each edge
     fn compute_degrees(&mut self) {
+        let cache_filename = format!("tmp/{}.degree.cache.json", self.id());
+        if let Ok(str) = fs::read_to_string(&cache_filename) {
+            self.degrees = serde_json::from_str(&str)
+                .expect("Error while deserializing the json file");
+            println!("reusing the cached degrees.");
+        }
+        println!("CGSHOP Instance: computing degrees...");
         let n = self.nb_vertices();
         let mut degrees:Vec<usize> = vec![0 ; n];
         for i in 0..n {
@@ -139,7 +147,12 @@ impl CGSHOPInstance {
             }
         }
         self.degrees = degrees;
-        println!("CGSHOP Instance: finished computing degrees.")
+        // write cache 
+        let mut new_cache_file = File::create(&cache_filename)
+            .expect("CGHSOP Instance cache: unable to open the file");
+        let degree_cache_value = json!(self.degrees);
+        new_cache_file.write_all(serde_json::to_string(&degree_cache_value).unwrap().as_bytes())
+            .expect("CGHSOPSolution.to_file: unable to write in the file");
     }
 }
 
