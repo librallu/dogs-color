@@ -24,7 +24,13 @@ pub fn greedy_rlf(inst:Rc<dyn ColoringInstance>, show_completion:bool) -> Soluti
         loop {
             match (0..n)
             .filter(|v| !colored.contains(*v) && !unreachable.contains(*v))
-            .max_by_key(|v| reachable_degree[*v] - reachable_degree_removal[*v] ) {
+            // .max_by_key(|v| reachable_degree[*v] - reachable_degree_removal[*v] ) {
+            .max_by(|a,b| {
+                reachable_degree_removal[*a].cmp(&reachable_degree_removal[*b])
+                    .then_with(|| (reachable_degree[*a] - reachable_degree_removal[*a]).cmp(
+                        &(reachable_degree[*b] - reachable_degree_removal[*b])
+                    ))
+            }) {
                 None => { break; } // no more reachable vector, stpo and add
                 Some(current_vertex) => {
                     if show_completion && nb_colored % 1000 == 0 { println!("colored {} / {}...", nb_colored, n); }
@@ -36,10 +42,10 @@ pub fn greedy_rlf(inst:Rc<dyn ColoringInstance>, show_completion:bool) -> Soluti
                         if !unreachable.contains(v) && !colored.contains(v) {
                             // every vertex that sees v sees a reachable vertex less
                             for w in inst.neighbors(v) {
-                                reachable_degree_removal[w] += 1;
+                                reachable_degree_removal[w] += 1; // because v is now unreachable
                             }
                             unreachable.insert(v);
-                            reachable_degree[v] -= 1;
+                            reachable_degree[v] -= 1; // because current_vertex is now colored
                         }
                     }
                 }

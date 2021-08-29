@@ -1,7 +1,7 @@
-name: greedy_dsatur
+name: greedy_rlf
 version: "1.0"
 author: Luc Libralesso <libralesso.l@gmail.com>
-about: DSATUR greedy to solve the graph coloring problem
+about: RLF greedy to solve the graph coloring problem
 args:
     - instance:
         long: instance
