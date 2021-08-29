@@ -37,7 +37,7 @@ pub fn read_params(main_args:ArgMatches) -> (String, Rc<dyn ColoringInstance>, f
             Rc::new(CompactInstance::from_file(inst_filename))
         },
         "cgshop" => { // read CGSHOP instance
-            Rc::new(CGSHOPInstance::from_file(inst_filename))
+            Rc::new(CGSHOPInstance::from_file(inst_filename, true))
         },
         _ => panic!("instance type unknown {}", instance_type)
     };

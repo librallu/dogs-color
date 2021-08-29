@@ -6,10 +6,9 @@ Implements:
 use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Write};
+use std::cmp::{max, min};
 
 use serde::{Serialize, Deserialize};
-use geo::{Coordinate, Line};
-use geo::algorithm::line_intersection::line_intersection;
 use serde_json::json;
 
 use crate::color::{VertexId, ColoringInstance};
@@ -35,6 +34,10 @@ pub struct CGSHOPInstance {
     /// degrees if they are computed of each segment
     #[serde(skip)]
     degrees: Vec<usize>,
+    /// preprocessed coordinates
+    #[serde(skip)]
+    coordinates: Vec<((i64,i64),(i64,i64))>,
+
 }
 
 
@@ -49,7 +52,7 @@ impl ColoringInstance for CGSHOPInstance {
     }
 
     fn are_adjacent(&self, u:VertexId, v:VertexId) -> bool {
-        is_intersection(&self.coordinates(u), &self.coordinates(v))
+        are_intersecting(&self.coordinates[u], &self.coordinates[v])
     }
 
     fn display_statistics(&self) {
@@ -66,23 +69,26 @@ impl ColoringInstance for CGSHOPInstance {
 
 impl CGSHOPInstance {
     /** reads a CGSHOP instance from a file. */
-    pub fn from_file(filename:&str) -> Self {
+    pub fn from_file(filename:&str, should_compute_degrees:bool) -> Self {
         let str = fs::read_to_string(filename)
             .expect("Error while reading the file...");
         let mut res:Self = serde_json::from_str(&str)
             .expect("Error while deserializing the json file");
-        res.compute_degrees();
+        // computing coordinates cache
+        res.coordinates = (0..res.m()).map(|s| res.build_coordinates(s)).collect();
+        if should_compute_degrees {
+            res.compute_degrees();
+        }
         res
     }
 
     /** converts to a graph coloring instance. */
     pub fn to_graph_coloring_instance(&self) -> CompactInstance {
         let nb_vertices = self.m();
-        let edge_coordinates = self.edge_coordinates();
         let mut adj_list:Vec<Vec<usize>> = vec![vec![] ; nb_vertices];
         for i in 0..nb_vertices {
             for j in 0..i {
-                if is_intersection(&edge_coordinates[i], &edge_coordinates[j]){
+                if self.are_adjacent(i, j) {
                     adj_list[i].push(j);
                     adj_list[j].push(i);
                 }
@@ -107,20 +113,11 @@ impl CGSHOPInstance {
         dx*dx + dy*dy
     }
 
-    /// edge coordinates (x1,y1,x2,y2)
-    pub fn edge_coordinates(&self) -> Vec<(f64,f64,f64,f64)> {
-        (0..self.edge_i.len()).map(|i| {
-            self.coordinates(i)
-        }).collect()
-    }
-
     /// edge coordinate for segment i (x1,y1,x2,y2)
-    pub fn coordinates(&self, i:usize) -> (f64,f64,f64,f64) {
+    pub fn build_coordinates(&self, i:usize) -> ((i64,i64),(i64,i64)) {
         (
-            self.x[self.edge_i[i]],
-            self.y[self.edge_i[i]],
-            self.x[self.edge_j[i]],
-            self.y[self.edge_j[i]],
+            (self.x[self.edge_i[i]] as i64, self.y[self.edge_i[i]] as i64),
+            (self.x[self.edge_j[i]] as i64, self.y[self.edge_j[i]] as i64),
         )
     }
 
@@ -157,30 +154,51 @@ impl CGSHOPInstance {
     }
 }
 
-/**
-    true iff the lines defined by (x1,y1), (x2,y2) intersect
-    There exists an intersection if and only if:
-        - Collinear, and proper intersection (not at end points)
+
+/** 3 point orientation (either collinear, clockwise or counterclockwise) */
+#[derive(Debug,Eq,PartialEq)]
+enum Orientation {
+    Collinear,
+    Clockwise,
+    CounterClockwise,
+}
+
+/** returns:
+ - 0 if p,q,r are colinear
+ - 1 if clockwise orientation
+ - 2 if counterclockwise orientation
 */
-pub fn is_intersection(a:&(f64,f64,f64,f64), b:&(f64,f64,f64,f64)) -> bool {
-    let l1 = Line::new(
-        Coordinate {x:a.0, y:a.1},
-        Coordinate {x:a.2, y:a.3}
-    );
-    let l2 = Line::new(
-        Coordinate {x:b.0, y:b.1},
-        Coordinate {x:b.2, y:b.3}
-    );
-    match line_intersection(l1,l2) {
-        Some(intersection) => match intersection {
-            geo::line_intersection::LineIntersection::SinglePoint
-                {intersection:_, is_proper } => { is_proper },
-            geo::line_intersection::LineIntersection::Collinear { intersection:_ } => true,
-        },
-        None => false,
+fn orientation(p:&(i64,i64), q:&(i64,i64), r:&(i64,i64)) -> Orientation {
+    let val:i64 = (q.1 - p.1) * (r.0 - q.0) - (q.0 - p.0) * (r.1 - q.1);
+    if val == 0 { return Orientation::Collinear; }
+    match val > 0 {
+        true => Orientation::Clockwise,
+        false => Orientation::CounterClockwise
     }
 }
 
+fn on_segment(p:&(i64,i64), q:&(i64,i64), r:&(i64,i64)) -> bool {
+    if q.0 <= max(p.0, r.0) && q.0 >= min(p.0, r.0) && 
+        q.1 <= max(p.1, r.1) && q.1 >= min(p.1, r.1) {
+            return true;
+    }
+    false
+}
+
+/** returns true iff segments (p1,q1) and (p2,q2) intersect */
+fn are_intersecting((p1,q1):&((i64,i64),(i64,i64)), (p2,q2):&((i64,i64),(i64,i64))) -> bool {
+    if p1 == p2 || p1 == q2 || q1 == p2 || q1 == q2 { return false; } // accept end points that are the same
+    let o1 = orientation(p1,q1,p2);
+    let o2 = orientation(p1,q1,q2);
+    let o3 = orientation(p2,q2,p1);
+    let o4 = orientation(p2,q2,q1);
+    if o1 != o2 && o3 != o4 { return true; }
+    if o1 == Orientation::Collinear && on_segment(p1,p2,q1) { return true; }
+    if o2 == Orientation::Collinear && on_segment(p1,q2,q1) { return true; }
+    if o3 == Orientation::Collinear && on_segment(p2,p1,q2) { return true; }
+    if o4 == Orientation::Collinear && on_segment(p2,q1,q2) { return true; }
+    false
+}
 
 /** data structure to represent a CGSHOP solution */
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -243,25 +261,48 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_conflict() {
-        let l1 = (42146., 64522., 63387., 19658.);
-        let l2 = (66944., 32411., 42137., 48996.);
-        assert!(is_intersection(&l1, &l2));
+    fn test_are_intersecting_1() {
+        let a = ((1,1),(10,1));
+        let b = ((1,2),(10,2));
+        assert!(!are_intersecting(&a, &b));
+    }
+
+    #[test]
+    fn test_are_intersecting_2() {
+        let a = ((10,0),(0,10));
+        let b = ((0,0),(10,10));
+        assert!(are_intersecting(&a, &b));
+    }
+
+    #[test]
+    fn test_are_intersecting_3() {
+        let a = ((-5,-4),(0,0));
+        let b = ((1,1),(10,10));
+        assert!(!are_intersecting(&a, &b));
+    }
+
+
+    #[test]
+    fn test_are_intersecting_4() {
+        let a = ((0,0),(0,5));
+        let b = ((0,0),(5,0));
+        assert!(!are_intersecting(&a, &b));
     }
 
     #[test]
     fn test_read_tiny() {
         let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json"
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json",
+            true
         );
         cg_inst.display_statistics();
-        assert_eq!(cg_inst.coordinates(0), (60941.,77185.,  42146.,64522.));
     }
 
     #[test]
     fn test_read_instance() {
         let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json"
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json",
+            true
         );
         cg_inst.display_statistics();
         let inst = cg_inst.to_graph_coloring_instance();
@@ -271,7 +312,8 @@ mod tests {
     #[test]
     fn test_read_instance_sqrm() {
         let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json"
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
+            true
         );
         cg_inst.display_statistics();
         let inst = cg_inst.to_graph_coloring_instance();
