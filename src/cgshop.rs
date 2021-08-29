@@ -190,10 +190,9 @@ fn are_intersecting((p1,q1):&((i64,i64),(i64,i64)), (p2,q2):&((i64,i64),(i64,i64
     if p1 == p2 || p1 == q2 || q1 == p2 || q1 == q2 { return false; } // accept end points that are the same
     let o1 = orientation(p1,q1,p2);
     let o2 = orientation(p1,q1,q2);
-    if o1 != o2 { return true; }
     let o3 = orientation(p2,q2,p1);
     let o4 = orientation(p2,q2,q1);
-    if o3 != o4 { return true; }
+    if o1 != o2 && o3 != o4 { return true; }
     if o1 == Orientation::Collinear && on_segment(p1,p2,q1) { return true; }
     if o2 == Orientation::Collinear && on_segment(p1,q2,q1) { return true; }
     if o3 == Orientation::Collinear && on_segment(p2,p1,q2) { return true; }

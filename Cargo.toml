@@ -32,3 +32,7 @@ opt-level=3 # optimized for quick test on performance (should not be used by def
 [[bin]]
 name = "greedy_dsatur"
 path = "src/bin/greedy_dsatur.rs"
+
+[[bin]]
+name = "dsatur_greedy"
+path = "src/bin/dsatur_greedy.rs"
