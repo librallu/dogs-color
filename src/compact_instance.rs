@@ -33,6 +33,8 @@ impl ColoringInstance for CompactInstance {
         }
     }
 
+    fn edges(&self) -> &[(VertexId, VertexId)] { &self.edges }
+
     fn display_statistics(&self) {
         println!("\t{} \t vertices", self.nb_vertices());
         println!("\t{} \t edges", self.nb_edges());
@@ -56,9 +58,6 @@ impl ColoringInstance for CompactInstance {
 
 
 impl CompactInstance {
-
-    /// edge list
-    pub fn edges(&self) -> &[(VertexId, VertexId)] { &self.edges }
 
     /// returns the number of edges in the graph
     pub fn nb_edges(&self) -> usize { self.m }

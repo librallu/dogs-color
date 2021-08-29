@@ -64,6 +64,8 @@ impl ColoringInstance for CGSHOPInstance {
     fn write_solution(&self, filename:&str, solution:&[Vec<usize>]) {
         CGSHOPSolution::from_solution(self.id(), solution).to_file(filename);
     }
+
+    fn edges(&self) -> &[(VertexId, VertexId)] { todo!() }
 }
 
 

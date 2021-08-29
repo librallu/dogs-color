@@ -11,8 +11,9 @@ use dogs::search_space::{
 };
 use dogs::combinators::tabu::TabuCombinator;
 use dogs::tree_search::greedy::Greedy;
+use rand::prelude::ThreadRng;
 
-use crate::color::{CompactInstance, Solution, VertexId, checker, CheckerResult};
+use crate::color::{ColoringInstance, Solution, VertexId, checker, CheckerResult};
 
 
 /**
@@ -20,7 +21,9 @@ Decision of changing the color of vertex v by c
 */
 #[derive(Debug,Clone,Hash,Eq,PartialEq)]
 pub struct Decision {
+    /// vertex to color
     pub v: VertexId,
+    /// color to use
     pub c: usize,
 }
 
@@ -45,13 +48,14 @@ pub struct Node {
 
 /** implements a specific tabu tenure for the graph coloring
 Is parametrized by:
- - L: minimum size of the tabu tenure (example value: 5)
+ - L: minimum size of the tabu tenure (example value: 10). We use a random number between 0 and L.
  - λ: (example value: 0.6)
 keeps all moves that are between L+λ.F(c) where F(c) is the number of conflicts.
 Maintains the current iteration number and the last iteration in which
 the decision have been taken. When checking if a conflict exists,
 checks that its last access is greater than current_iter - L+λ.F(c)
 */
+#[derive(Debug)]
 pub struct TabuColTenure {
     /// tabu fixed size
     l:usize,
@@ -60,7 +64,9 @@ pub struct TabuColTenure {
     /// number of iterations since the beginning of the search
     nb_iter: usize,
     /// decisions[v][c]: last iteration in which the decision have been taken
-    decisions: Vec<Vec<Option<usize>>>
+    decisions: Vec<Vec<Option<usize>>>,
+    /// random number generator
+    rng: ThreadRng,
 }
 
 impl TabuTenure<Node, Decision> for TabuColTenure {
@@ -69,11 +75,12 @@ impl TabuTenure<Node, Decision> for TabuColTenure {
         self.nb_iter += 1;
     }
 
-    fn contains(&self, n:&Node, d:&Decision) -> bool {
+    fn contains(&mut self, n:&Node, d:&Decision) -> bool {
         match self.decisions[d.v][d.c] {
             None => false,
             Some(i) => {
-                let threshold = self.l + (self.lambda * (n.nb_conflicts as f64)) as usize;
+                let rand_l = self.rng.gen_range(0..self.l);
+                let threshold = rand_l + (self.lambda * (n.nb_conflicts as f64)) as usize;
                 threshold > self.nb_iter || i >= self.nb_iter - threshold
             }
         }
@@ -92,6 +99,7 @@ impl TabuColTenure {
             l, lambda,
             nb_iter: 0,
             decisions: vec![vec![None ; c] ; n],
+            rng: rand::thread_rng(),
         }
     }
 }
@@ -114,7 +122,7 @@ main procedure:
 #[derive(Debug)]
 pub struct SearchState {
     /// reference instance
-    inst: Rc<CompactInstance>,
+    inst: Rc<dyn ColoringInstance>,
     /// colors[v]: color of the vertex v
     colors: Vec<usize>,
     /// number of colors used
@@ -129,16 +137,16 @@ impl SearchState {
     /**
     Creates a new search state with a random solution using nb_colors
     */
-    pub fn random_solution(inst:Rc<CompactInstance>, nb_colors:usize) -> Self {
+    pub fn random_solution(inst:Rc<dyn ColoringInstance>, nb_colors:usize) -> Self {
         let mut rng = rand::thread_rng();
-        let mut colors:Vec<usize> = Vec::with_capacity(inst.n());
-        let mut nb_neigh_colors = vec![ vec![0 ; nb_colors] ; inst.n()];
-        for i in 0..inst.n() { // color each vertex
+        let mut colors:Vec<usize> = Vec::with_capacity(inst.nb_vertices());
+        let mut nb_neigh_colors = vec![ vec![0 ; nb_colors] ; inst.nb_vertices()];
+        for i in 0..inst.nb_vertices() { // color each vertex
             let c = rng.gen_range(0..nb_colors); // excludes nb_colors
             colors.push(c);
             // for each neighbor of i, increment the number of adjacent vertices of color c
-            for j in inst.adj(i) {
-                nb_neigh_colors[*j][c] += 1;
+            for j in inst.neighbors(i) {
+                nb_neigh_colors[j][c] += 1;
             }
         }
         Self {
@@ -147,14 +155,6 @@ impl SearchState {
             nb_colors,
             nb_neigh_colors,
         }
-    }
-
-    /**
-    Creates a new search state from an existing solution.
-    Removes the color with the less vertices and replace it by random other colors
-    */
-    pub fn from_solution(inst:&CompactInstance, sol:Solution) -> Self {
-        todo!()
     }
 
     /** applies a decision to the search state */
@@ -166,10 +166,10 @@ impl SearchState {
     fn apply_decision(&mut self, decision:&Decision) {
         // update nb_neigh_color
         let previous_color = self.colors[decision.v];
-        for neigh in self.inst.adj(decision.v) {
-            debug_assert!(self.nb_neigh_colors[*neigh][previous_color] > 0);
-            self.nb_neigh_colors[*neigh][previous_color] -= 1;
-            self.nb_neigh_colors[*neigh][decision.c] += 1;
+        for neigh in self.inst.neighbors(decision.v) {
+            debug_assert!(self.nb_neigh_colors[neigh][previous_color] > 0);
+            self.nb_neigh_colors[neigh][previous_color] -= 1;
+            self.nb_neigh_colors[neigh][decision.c] += 1;
         }
         // update colors
         self.colors[decision.v] = decision.c;
@@ -206,7 +206,7 @@ impl ToSolution<Node, Solution> for SearchState {
         }
         let res:Solution = sol.iter().filter(|e| !e.is_empty())
             .cloned().collect();
-        assert_eq!(checker(&self.inst, &res), CheckerResult::Ok(res.len()));
+        assert_eq!(checker(self.inst.clone(), &res), CheckerResult::Ok(res.len()));
         res
     }
 }
@@ -270,13 +270,13 @@ impl TotalNeighborGeneration<Node> for SearchState {
 Runs a tabucol algorithm. Given an instance and an initial number of colors, run the search algorithm until the stopping criterion is reached.
 Optionnaly, a filename is given to export the solution
 */
-pub fn tabucol<Stopping:StoppingCriterion>(inst:Rc<CompactInstance>, nb_initial_colors:usize, stopping_criterion:Stopping, solution_filename:Option<String>) {
+pub fn tabucol<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringInstance>, nb_initial_colors:usize, stopping_criterion:Stopping, solution_filename:Option<String>) {
     let mut nb_colors = nb_initial_colors;
     while !stopping_criterion.is_finished() {
         let search_state = Rc::new(RefCell::new(
             TabuCombinator::new(
                 SearchState::random_solution(inst.clone(), nb_colors),
-                TabuColTenure::new(60, 0.6, inst.n(), nb_colors)
+                TabuColTenure::new(10, 0.6, inst.nb_vertices(), nb_colors)
             )
         ));
         let mut ts = Greedy::new(search_state.clone());
@@ -310,6 +310,8 @@ pub fn tabucol<Stopping:StoppingCriterion>(inst:Rc<CompactInstance>, nb_initial_
 
 #[cfg(test)]
 mod tests {
+
+    use crate::compact_instance::CompactInstance;
 
     use super::*;
 
@@ -361,7 +363,7 @@ mod tests {
                 TabuCombinator::new(
                     SearchState::random_solution(inst.clone(), nb_initial_colors),
                     // FullTabuTenure::default()
-                    TabuColTenure::new(60, 0.6, inst.n(), nb_initial_colors)
+                    TabuColTenure::new(60, 0.6, inst.nb_vertices(), nb_initial_colors)
                 )
                 
             ).bind_logger(Rc::downgrade(&logger))

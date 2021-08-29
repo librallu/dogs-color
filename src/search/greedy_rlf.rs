@@ -24,7 +24,6 @@ pub fn greedy_rlf(inst:Rc<dyn ColoringInstance>, show_completion:bool) -> Soluti
         loop {
             match (0..n)
             .filter(|v| !colored.contains(*v) && !unreachable.contains(*v))
-            // .max_by_key(|v| reachable_degree[*v] - reachable_degree_removal[*v] ) {
             .max_by(|a,b| {
                 reachable_degree_removal[*a].cmp(&reachable_degree_removal[*b])
                     .then_with(|| (reachable_degree[*a] - reachable_degree_removal[*a]).cmp(

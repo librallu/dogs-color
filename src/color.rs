@@ -1,5 +1,6 @@
 use bit_set::BitSet;
 use std::rc::Rc;
+use std::fmt::Debug;
 
 /** Vertex Id */
 pub type VertexId = usize;
@@ -11,7 +12,7 @@ pub type Solution = Vec<Vec<VertexId>>;
 
 /** Represents an instance of graph coloring.
 This trait allows to represent various coloring instances using an implicit graph. */
-pub trait ColoringInstance {
+pub trait ColoringInstance:Debug {
     /// returns the number of vertices in the graph
     fn nb_vertices(&self) -> usize;
 
@@ -29,6 +30,9 @@ pub trait ColoringInstance {
 
     /// writes a solution into a file. each line corresponds to a color.
     fn write_solution(&self, filename:&str, solution:&[Vec<usize>]);
+
+    /// returns all edges in the instance
+    fn edges(&self) -> &[(VertexId, VertexId)];
 }
 
 

@@ -38,6 +38,10 @@ path = "src/bin/greedy_dsatur.rs"
 name = "greedy_rlf"
 path = "src/bin/greedy_rlf.rs"
 
-# [[bin]]
-# name = "dsatur_greedy"
-# path = "src/bin/dsatur_greedy.rs"
+[[bin]]
+name = "tabucol"
+path = "src/bin/tabucol.rs"
+
+[[bin]]
+name = "cgshop_checker"
+path = "src/bin/cgshop_checker.rs"

@@ -9,14 +9,14 @@ pub mod greedy_rlf;
 /// greedy that finds a clique of "large" size
 pub mod greedy_clique;
 
+/// TABUCOL implementation 
+pub mod tabucol;
+
 // /// backtracking-based dsatur
 // pub mod backtracking_dsatur;
 
 // /// copying-based dsatur (experimental) 
 // pub mod dsatur;
-
-// /// TABUCOL implementation 
-// pub mod tabucol;
 
 // /// PARTIALCOL implementation
 // pub mod partialcol;
