@@ -10,7 +10,7 @@ use dogs_color::util::{read_params, export_results};
 /** solves a coloring instance using a DSATUR greedy */
 pub fn main() {
     // parse arguments
-    let yaml = load_yaml!("dsatur_greedy.yml");
+    let yaml = load_yaml!("greedy_dsatur.yml");
     let main_args = App::from_yaml(yaml).get_matches();
     let (
         inst_filename,

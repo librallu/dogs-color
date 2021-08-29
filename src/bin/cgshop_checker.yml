@@ -1,0 +1,19 @@
+name: cgshop_checker
+version: "1.0"
+author: Luc Libralesso <libralesso.l@gmail.com>
+about: Checker for the CGSHOP22 competition
+args:
+    - instance:
+        long: instance
+        short: i
+        value_name: INST_FILE
+        help: Instance file
+        required: true
+        takes_value: true
+    - solution:
+        long: solution
+        short: s
+        value_name: SOLUTION_FILE
+        help: Solution file
+        required: true
+        takes_value: true
