@@ -1,7 +1,4 @@
-use std::time::Instant;
-
 use clap::{App, load_yaml};
-use serde_json::json;
 use dogs::search_algorithm::TimeStoppingCriterion;
 
 use dogs_color::search::tabucol::tabucol;
