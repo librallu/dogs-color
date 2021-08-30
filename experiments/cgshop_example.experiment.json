@@ -1,13 +1,13 @@
 {
     "experiment_name":   "cgshop_example",
     "nb_parallel_tasks": 4,
-    "fallback_threads": 1,
+    "fallback_threads": 4,
     "instance_list":     "../insts/cgshop_22_examples.csv",
     "output_prefix":     ".",
     "solvers": [
         {
             "name": "DSATUR",
-            "exe_path": "../target/release/dsatur_greedy",
+            "exe_path": "../target/release/greedy_dsatur",
             "params": [
                 {"name":"instance", "values":["#{instance_path}"]},
                 {"name":"time",     "values":["#{time_limit}"]},
