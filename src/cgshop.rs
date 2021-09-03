@@ -166,9 +166,9 @@ enum Orientation {
 }
 
 /** returns:
- - 0 if p,q,r are colinear
- - 1 if clockwise orientation
- - 2 if counterclockwise orientation
+ - Collinear if p,q,r are colinear
+ - Clockwise if clockwise orientation
+ - CounterClockwise if counterclockwise orientation
 */
 fn orientation(p:&(i64,i64), q:&(i64,i64), r:&(i64,i64)) -> Orientation {
     let val:i64 = (q.1 - p.1) * (r.0 - q.0) - (q.0 - p.0) * (r.1 - q.1);
@@ -189,9 +189,12 @@ fn on_segment(p:&(i64,i64), q:&(i64,i64), r:&(i64,i64)) -> bool {
 
 /** returns true iff segments (p1,q1) and (p2,q2) intersect */
 fn are_intersecting((p1,q1):&((i64,i64),(i64,i64)), (p2,q2):&((i64,i64),(i64,i64))) -> bool {
-    if p1 == p2 || p1 == q2 || q1 == p2 || q1 == q2 { return false; } // accept end points that are the same
     let o1 = orientation(p1,q1,p2);
     let o2 = orientation(p1,q1,q2);
+    if p1 == p2 || p1 == q2 || q1 == p2 || q1 == q2 { // check if same points
+        return (o1 == Orientation::Collinear && p1 != p2 && q1 != p2) ||
+            (o2 == Orientation::Collinear && p1 != q2 && q1 != q2); // conflict only if collinear
+    } // accept end points that are the same
     let o3 = orientation(p2,q2,p1);
     let o4 = orientation(p2,q2,q1);
     if o1 != o2 && o3 != o4 { return true; }
@@ -272,6 +275,13 @@ mod tests {
     use super::*;
 
     #[test]
+    fn colinear_with_same_point() {
+        let a = ((0,0), (0,1));
+        let b = ((0,0), (0,5));
+        assert!(are_intersecting(&a, &b));
+    }
+
+    #[test]
     fn test_are_intersecting_1() {
         let a = ((1,1),(10,1));
         let b = ((1,2),(10,2));
@@ -298,36 +308,5 @@ mod tests {
         let a = ((0,0),(0,5));
         let b = ((0,0),(5,0));
         assert!(!are_intersecting(&a, &b));
-    }
-
-    #[test]
-    fn test_read_tiny() {
-        let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json",
-            true
-        );
-        cg_inst.display_statistics();
-    }
-
-    #[test]
-    fn test_read_instance() {
-        let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json",
-            true
-        );
-        cg_inst.display_statistics();
-        let inst = cg_inst.to_graph_coloring_instance();
-        inst.display_statistics();
-    }
-
-    #[test]
-    fn test_read_instance_sqrm() {
-        let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
-            true
-        );
-        cg_inst.display_statistics();
-        let inst = cg_inst.to_graph_coloring_instance();
-        inst.display_statistics();
     }
 }

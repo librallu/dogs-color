@@ -20,6 +20,10 @@ Discrete Optimization Global Search for the Graph Coloring problem
 
 - [ ] Compute more instance metrics (see https://doi.org/10.1016/j.cor.2013.11.015)
 
+# What's next (CGSHOP)?
+
+- [ ] unit test instances for the CGSHOP
+- [ ] orientation sorting greedy
 
 # What's next (algorithms)?
 
