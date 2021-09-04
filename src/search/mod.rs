@@ -12,6 +12,15 @@ pub mod greedy_clique;
 /// TABUCOL implementation 
 pub mod tabucol;
 
+/// Admissible Orientation Greedy algorithm for the CGSHOP competition
+pub mod cgshop_aog;
+
+/// Stable generation based algorithm for the CGSHOP competition
+pub mod cgshop_stable_generation;
+
+/// utility solvers
+pub mod util;
+
 // /// backtracking-based dsatur
 // pub mod backtracking_dsatur;
 

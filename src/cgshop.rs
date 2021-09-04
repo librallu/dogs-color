@@ -1,3 +1,4 @@
+use std::f64::consts::PI;
 /*
 Implements:
  - procedures to read and write CGSHOP instance and solution formats
@@ -7,7 +8,6 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Write};
 use std::cmp::{max, min};
-
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 
@@ -115,12 +115,25 @@ impl CGSHOPInstance {
         dx*dx + dy*dy
     }
 
+    /// coordinates of a segment ((ax,ay),(bx,by))
+    pub fn coordinate(&self, i:usize) -> &((i64,i64),(i64,i64)) {
+        &self.coordinates[i]
+    }
+
     /// edge coordinate for segment i (x1,y1,x2,y2)
     pub fn build_coordinates(&self, i:usize) -> ((i64,i64),(i64,i64)) {
         (
             (self.x[self.edge_i[i]] as i64, self.y[self.edge_i[i]] as i64),
             (self.x[self.edge_j[i]] as i64, self.y[self.edge_j[i]] as i64),
         )
+    }
+
+    /// Orientation of the edge [0;π]
+    pub fn segment_orientation(&self, i:usize) -> f64 {
+        let ((ax,ay),(bx,by)) = &self.coordinates[i];
+        let dx = (bx - ax) as f64;
+        let dy = (by - ay) as f64;
+        (dy/dx).atan() * 180. / PI
     }
 
     /// computes the degrees for each edge
@@ -310,3 +323,5 @@ mod tests {
         assert!(!are_intersecting(&a, &b));
     }
 }
+
+
