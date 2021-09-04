@@ -1,0 +1,1 @@
+{"type":"Solution_CGSHOP2022","instance":"tiny10","num_colors":2,"colors":[0,1,0,0,1,0,0,0,0,0]}

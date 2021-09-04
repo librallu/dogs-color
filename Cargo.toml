@@ -17,6 +17,8 @@ serde_json = "1.0.57"
 nom = "7.0.0"
 rand = "0.8.4"
 priority-queue = "1.1.1"
+good_lp = "1.1.3" # CBC
+
 
 [profile.release]
 debug = true # to be removed eventually
@@ -45,3 +47,10 @@ path = "src/bin/tabucol.rs"
 [[bin]]
 name = "cgshop_checker"
 path = "src/bin/cgshop_checker.rs"
+
+
+# build for CBC
+[build]
+rustflags = [
+    "-L /usr/lib/x86_64-linux-gnu/libCbc.so"
+]
