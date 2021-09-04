@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{rc::Rc, thread::current};
 
 use ordered_float::OrderedFloat;
 
@@ -45,6 +45,55 @@ pub fn cgshop_aog(inst:Rc<CGSHOPInstance>, show_completion:bool) -> Solution {
     res
 }
 
+
+
+/**
+Admissible Orientation Greedy algorithm for the CGSHOP challenge
+Sorts the segments by orientation and apply a simple coloring algorithm.
+Chooses to select the non-conflicting color-class that is the closest to the edge direction
+*/
+pub fn cgshop_aog_v2(inst:Rc<CGSHOPInstance>, show_completion:bool) -> Solution {
+    let n = inst.nb_vertices();
+    let mut sorted_segments:Vec<usize> = (0..n).collect();
+    sorted_segments.sort_by_key(|i| OrderedFloat(inst.segment_orientation(*i)));
+    let mut res:Vec<Vec<usize>> = Vec::new();
+    let mut avg_orientation:Vec<f64> = Vec::new();
+    let mut nb_colored = 0;
+    for i in sorted_segments { // add segments one by one
+        nb_colored += 1;
+        if show_completion && nb_colored % 1000 == 0 { println!("colored {} / {}...", nb_colored, n); }
+        let mut added = false;
+        // iterate over the existing colors
+        let mut existing_colors:Vec<usize> = (0..res.len()).collect();
+        existing_colors.sort_by_key(|c| -OrderedFloat((avg_orientation[*c]-inst.segment_orientation(i)).abs()) );
+        for current_color in existing_colors {
+            let mut is_conflicting = false;
+            for j in &res[current_color] {
+                if inst.are_adjacent(i, *j) {
+                    is_conflicting = true;
+                    break;
+                }
+            }
+            if !is_conflicting {
+                res[current_color].push(i); // add color i to current color
+                avg_orientation[current_color] += (inst.segment_orientation(i)-avg_orientation[current_color])
+                    / res[current_color].len() as f64;
+                added = true;
+                break;
+            }
+        }
+        // if not added, create a new color
+        if !added {
+            res.push(vec![i]);
+            avg_orientation.push(inst.segment_orientation(i));
+        }
+    }
+    res
+}
+
+
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -74,6 +123,17 @@ mod tests {
     }
 
     #[test]
+    fn test_read_instance_visp_50k() {
+        let cg_inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json",
+            true
+        ));
+        cg_inst.display_statistics();
+        let solution = cgshop_aog_v2(cg_inst, true);
+        println!("nb colors: {}", solution.len());
+    }
+
+    #[test]
     fn test_read_instance_sqrm() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
             "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
@@ -91,7 +151,7 @@ mod tests {
             true
         ));
         cg_inst.display_statistics();
-        let solution = cgshop_aog(cg_inst, true);
+        let solution = cgshop_aog_v2(cg_inst, true);
         println!("nb colors: {}", solution.len());
     }
 
