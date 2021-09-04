@@ -322,6 +322,43 @@ mod tests {
         let b = ((0,0),(5,0));
         assert!(!are_intersecting(&a, &b));
     }
+
+    #[test]
+    fn test_compact_tiny() {
+        let cg_inst = CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json",
+            true
+        );
+        let compact_instance=  cg_inst.to_graph_coloring_instance();
+        assert_eq!(compact_instance.nb_vertices(), 10);
+        assert_eq!(compact_instance.nb_edges(), 5);
+        compact_instance.display_statistics();
+
+    }
+
+    #[test]
+    fn test_compact_visp() {
+        let cg_inst = CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json",
+            true
+        );
+        let compact_instance=  cg_inst.to_graph_coloring_instance();
+        assert_eq!(compact_instance.nb_vertices(), 5874);
+        assert_eq!(compact_instance.nb_edges(), 3491329);
+        compact_instance.display_statistics();
+    }
+
+    #[test]
+    fn test_compact_sqrm() {
+        let cg_inst = CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
+            true
+        );
+        let compact_instance=  cg_inst.to_graph_coloring_instance();
+        assert_eq!(compact_instance.nb_vertices(), 5000);
+        assert_eq!(compact_instance.nb_edges(), 7772071);
+        compact_instance.display_statistics();
+    }
 }
 
 
