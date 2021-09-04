@@ -178,11 +178,6 @@ enum Orientation {
     CounterClockwise,
 }
 
-/** returns:
- - Collinear if p,q,r are colinear
- - Clockwise if clockwise orientation
- - CounterClockwise if counterclockwise orientation
-*/
 fn orientation(p:&(i64,i64), q:&(i64,i64), r:&(i64,i64)) -> Orientation {
     let val:i64 = (q.1 - p.1) * (r.0 - q.0) - (q.0 - p.0) * (r.1 - q.1);
     if val == 0 { return Orientation::Collinear; }
@@ -207,7 +202,8 @@ fn are_intersecting((p1,q1):&((i64,i64),(i64,i64)), (p2,q2):&((i64,i64),(i64,i64
     if p1 == p2 || p1 == q2 || q1 == p2 || q1 == q2 { // check if same points
         return (o1 == Orientation::Collinear && p1 != p2 && q1 != p2) ||
             (o2 == Orientation::Collinear && p1 != q2 && q1 != q2); // conflict only if collinear
-    } // accept end points that are the same
+    } // otherwise, accept end points that are the same
+    // if no same points, "just" check if they are intersecting
     let o3 = orientation(p2,q2,p1);
     let o4 = orientation(p2,q2,q1);
     if o1 != o2 && o3 != o4 { return true; }
@@ -332,7 +328,6 @@ mod tests {
         let compact_instance=  cg_inst.to_graph_coloring_instance();
         assert_eq!(compact_instance.nb_vertices(), 10);
         assert_eq!(compact_instance.nb_edges(), 5);
-        compact_instance.display_statistics();
 
     }
 
@@ -345,7 +340,6 @@ mod tests {
         let compact_instance=  cg_inst.to_graph_coloring_instance();
         assert_eq!(compact_instance.nb_vertices(), 5874);
         assert_eq!(compact_instance.nb_edges(), 3491329);
-        compact_instance.display_statistics();
     }
 
     #[test]
@@ -357,7 +351,6 @@ mod tests {
         let compact_instance=  cg_inst.to_graph_coloring_instance();
         assert_eq!(compact_instance.nb_vertices(), 5000);
         assert_eq!(compact_instance.nb_edges(), 7772071);
-        compact_instance.display_statistics();
     }
 }
 
