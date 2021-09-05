@@ -1,5 +1,6 @@
-use std::{rc::Rc, thread::current};
+use std::rc::Rc;
 
+use bit_set::BitSet;
 use ordered_float::OrderedFloat;
 
 use crate::{cgshop::CGSHOPInstance, color::{ColoringInstance, Solution}};
@@ -92,6 +93,45 @@ pub fn cgshop_aog_v2(inst:Rc<CGSHOPInstance>, show_completion:bool) -> Solution 
 }
 
 
+/**
+Admissible Orientation Greedy algorithm for the CGSHOP challenge
+finds an objective orientation (weighted average of remaining segment orientations)
+Then, generate a stable, choosing first segments closest to this orientation.
+*/
+pub fn cgshop_aog_v3(inst:Rc<CGSHOPInstance>, show_completion:bool) -> Solution {
+    let mut res:Solution = Vec::new();
+    let n = inst.nb_vertices();
+    let mut colored = BitSet::with_capacity(n);
+    let mut nb_colored:usize = 0;
+    while nb_colored < n { // while not all vertices are colored
+        let mut uncolored_segments:Vec<usize> = (0..n).filter(|i| !colored.contains(*i)).collect();
+        // find average orientation
+        let average_orientation:f64 = uncolored_segments.iter()
+            .map(|i| inst.segment_orientation(*i)).sum::<f64>() / uncolored_segments.len() as f64;
+        // sort and add uncolored segments by proximity to goal orientation
+        uncolored_segments.sort_by_key(|i| OrderedFloat(
+            (inst.segment_orientation(*i) - average_orientation).abs()
+        ));
+        let mut current_segments:Vec<usize> = Vec::new();
+        for segment in uncolored_segments.iter() {
+            let mut is_conflicting = false;
+            for s in current_segments.iter() {
+                if inst.are_adjacent(*s, *segment) {
+                    is_conflicting = true;
+                    break;
+                }
+            }
+            if !is_conflicting { // add the segment to the current segment list (color)
+                current_segments.push(*segment);
+                nb_colored += 1;
+                if show_completion && nb_colored % 1000 == 0 { println!("colored {} / {}...", nb_colored, n); }
+                colored.insert(*segment);
+            }
+        }
+        res.push(current_segments);
+    }
+    res
+}
 
 
 #[cfg(test)]
@@ -108,6 +148,17 @@ mod tests {
         ));
         cg_inst.display_statistics();
         let solution = cgshop_aog(cg_inst, false);
+        println!("nb colors: {}", solution.len());
+    }
+
+    #[test]
+    fn test_read_instance_tiny_v3() {
+        let cg_inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json",
+            true
+        ));
+        cg_inst.display_statistics();
+        let solution = cgshop_aog_v3(cg_inst, false);
         println!("nb colors: {}", solution.len());
     }
 
@@ -145,13 +196,35 @@ mod tests {
     }
 
     #[test]
-    fn test_read_instance_sqrm_10k() {
+    fn test_read_instance_sqrm_v3() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json",
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
             true
         ));
         cg_inst.display_statistics();
-        let solution = cgshop_aog_v2(cg_inst, true);
+        let solution = cgshop_aog_v3(cg_inst, true);
+        println!("nb colors: {}", solution.len());
+    }
+
+    #[test]
+    fn test_read_instance_sqrm_50k() {
+        let cg_inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json",
+            true
+        ));
+        cg_inst.display_statistics();
+        let solution = cgshop_aog(cg_inst, true);
+        println!("nb colors: {}", solution.len());
+    }
+
+    #[test]
+    fn test_read_instance_sqrm_50k_v3() {
+        let cg_inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json",
+            true
+        ));
+        cg_inst.display_statistics();
+        let solution = cgshop_aog_v3(cg_inst, true);
         println!("nb colors: {}", solution.len());
     }
 
