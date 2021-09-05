@@ -1,0 +1,22 @@
+{
+    "experiment_name":   "cgshop_example",
+    "nb_parallel_tasks": 6,
+    "fallback_threads": 6,
+    "instance_list":     "../insts/cgshop_22_examples.csv",
+    "output_prefix":     ".",
+    "solvers": [
+        {
+            "name": "AOG",
+            "exe_path": "../target/release/greedy_cgshop_aog",
+            "params": [
+                {"name":"instance", "values":["#{instance_path}"]},
+                {"name":"time",     "values":["#{time_limit}"]},
+                {"name":"perf",     "values":["#{file_prefix}.stats.json"]},
+                {"name":"solution", "values":["#{file_prefix}.sol"]},
+                {"name":"type",     "values":["cgshop"]}
+            ]
+        }
+    ],
+    "analysis": {
+    }
+}
