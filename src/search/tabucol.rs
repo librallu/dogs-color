@@ -10,6 +10,7 @@ use dogs::search_space::{
     SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution, DecisionSpace
 };
 use dogs::combinators::tabu::TabuCombinator;
+use dogs::combinators::stats::StatTsCombinator;
 use dogs::tree_search::greedy::Greedy;
 use rand::prelude::ThreadRng;
 
@@ -274,14 +275,17 @@ pub fn tabucol<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringInstance>, nb_ini
     let mut nb_colors = nb_initial_colors;
     while !stopping_criterion.is_finished() {
         let search_state = Rc::new(RefCell::new(
-            TabuCombinator::new(
-                SearchState::random_solution(inst.clone(), nb_colors),
+            StatTsCombinator::new(
+                TabuCombinator::new(
+                    SearchState::random_solution(inst.clone(), nb_colors),
                 TabuColTenure::new(10, 0.6, inst.nb_vertices(), nb_colors)
+                )
             )
         ));
         let mut ts = Greedy::new(search_state.clone());
         ts.run(stopping_criterion.clone());
         // check that the last solution is valid
+        search_state.borrow_mut().display_statistics();
         match ts.get_manager().best() {
             None => {
                 println!("\tfailed improving the solution (finding {} colors)...", nb_colors);
@@ -379,6 +383,14 @@ mod tests {
         let inst = Rc::new(CompactInstance::from_file("insts/instances-dimacs1/le450_15a.col"));
         let nb_initial_colors:usize = 20;
         let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3.);
+        tabucol(inst, nb_initial_colors, stopping_criterion, None);
+    }
+
+    #[test]
+    fn test_metaheuristic_flat1000() {
+        let inst = Rc::new(CompactInstance::from_file("insts/instances-dimacs1/flat1000_76_0.col"));
+        let nb_initial_colors:usize = 112;
+        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(5.);
         tabucol(inst, nb_initial_colors, stopping_criterion, None);
     }
 }

@@ -66,7 +66,8 @@ pub fn cgshop_aog_v2(inst:Rc<CGSHOPInstance>, show_completion:bool) -> Solution 
         let mut added = false;
         // iterate over the existing colors
         let mut existing_colors:Vec<usize> = (0..res.len()).collect();
-        existing_colors.sort_by_key(|c| -OrderedFloat((avg_orientation[*c]-inst.segment_orientation(i)).abs()) );
+        // existing_colors.sort_by_key(|c| -OrderedFloat((avg_orientation[*c]-inst.segment_orientation(i)).abs()) );
+        existing_colors.sort_by_key(|c| -(res[*c].len() as i64));
         for current_color in existing_colors {
             let mut is_conflicting = false;
             for j in &res[current_color] {
@@ -106,11 +107,13 @@ pub fn cgshop_aog_v3(inst:Rc<CGSHOPInstance>, show_completion:bool) -> Solution 
     while nb_colored < n { // while not all vertices are colored
         let mut uncolored_segments:Vec<usize> = (0..n).filter(|i| !colored.contains(*i)).collect();
         // find average orientation
-        let average_orientation:f64 = uncolored_segments.iter()
+        let goal_orientation:f64 = uncolored_segments.iter()
             .map(|i| inst.segment_orientation(*i)).sum::<f64>() / uncolored_segments.len() as f64;
+        // let goal_orientation:f64 = inst.segment_orientation(*uncolored_segments.iter()
+        //     .max_by_key(|s| OrderedFloat(inst.squared_length(**s))).unwrap());
         // sort and add uncolored segments by proximity to goal orientation
         uncolored_segments.sort_by_key(|i| OrderedFloat(
-            (inst.segment_orientation(*i) - average_orientation).abs()
+            (inst.segment_orientation(*i) - goal_orientation).abs()
         ));
         let mut current_segments:Vec<usize> = Vec::new();
         for segment in uncolored_segments.iter() {
@@ -171,6 +174,8 @@ mod tests {
         cg_inst.display_statistics();
         let solution = cgshop_aog(cg_inst, true);
         println!("nb colors: {}", solution.len());
+        let nb_segments:Vec<usize> = solution.iter().map(|c| c.len()).collect();
+        println!("{:?}", nb_segments);
     }
 
     #[test]
@@ -180,7 +185,7 @@ mod tests {
             true
         ));
         cg_inst.display_statistics();
-        let solution = cgshop_aog_v2(cg_inst, true);
+        let solution = cgshop_aog_v3(cg_inst, true);
         println!("nb colors: {}", solution.len());
     }
 
@@ -193,6 +198,8 @@ mod tests {
         cg_inst.display_statistics();
         let solution = cgshop_aog(cg_inst, true);
         println!("nb colors: {}", solution.len());
+        let nb_segments:Vec<usize> = solution.iter().map(|c| c.len()).collect();
+        println!("{:?}", nb_segments);
     }
 
     #[test]
@@ -214,6 +221,19 @@ mod tests {
         ));
         cg_inst.display_statistics();
         let solution = cgshop_aog(cg_inst, true);
+        println!("nb colors: {}", solution.len());
+        let nb_segments:Vec<usize> = solution.iter().map(|c| c.len()).collect();
+        println!("{:?}", nb_segments);
+    }
+
+    #[test]
+    fn test_read_instance_sqrm_50k_v2() {
+        let cg_inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json",
+            true
+        ));
+        cg_inst.display_statistics();
+        let solution = cgshop_aog_v2(cg_inst, true);
         println!("nb colors: {}", solution.len());
     }
 

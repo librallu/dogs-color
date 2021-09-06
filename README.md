@@ -35,3 +35,11 @@ Discrete Optimization Global Search for the Graph Coloring problem
 - [ ] PLSCOL probability learning algorithms (https://doi.org/10.1016/j.asoc.2018.01.027)
 - [ ] multi-level algorithm (see: https://doi.org/10.1016/j.asoc.2021.107174)
 
+
+# Ideas
+
+- [ ] tabucol
+    - [ ] accept a random move if all are tabu
+    - [ ] break ties randomly
+    - [ ] important difference in number of checks / seconds (may be linked to the tabu move removal)
+    - [ ] autorize move if it is better than the current best point
