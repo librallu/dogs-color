@@ -5,7 +5,7 @@ use serde_json::Value;
 
 use crate::{
     cgshop::CGSHOPInstance,
-    color::{ColoringInstance, VertexId},
+    color::{ColoringInstance, VertexId, checker},
     compact_instance::CompactInstance
 };
 
@@ -70,6 +70,13 @@ pub fn export_results(
     // export solution
     match sol_file {
         None => {},
-        Some(filename) => { instance.write_solution(filename.as_str(), solution); }
+        Some(filename) => {
+            let checker_result = checker(instance.clone(), solution);
+            match checker_result {
+                crate::color::CheckerResult::Ok(_) => {},
+                _ => { panic!("invalid solution (reason: {:?})", checker_result)}
+            };
+            instance.write_solution(filename.as_str(), solution);
+        }
     }
 }
