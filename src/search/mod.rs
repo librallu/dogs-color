@@ -18,6 +18,9 @@ pub mod cgshop_aog;
 /// Stable generation based algorithm for the CGSHOP competition
 pub mod cgshop_stable_generation;
 
+/// Ejection chains. Removes the smallest color, and try to insert it to the minimum conflicting color.
+pub mod ejection_chains;
+
 /// utility solvers
 pub mod util;
 
