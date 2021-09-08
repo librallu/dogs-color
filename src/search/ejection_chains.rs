@@ -1,8 +1,60 @@
 use std::rc::Rc;
+use rand::{Rng, prelude::ThreadRng};
 
-use bit_set::BitSet;
+use dogs::combinators::helper::tabu_tenure::TabuTenure;
 
 use crate::color::{ColoringInstance, Solution, checker};
+
+
+/** simple tabu tenure that stores the insertions of colors */
+#[derive(Debug)]
+pub struct EjectionTabuTenure {
+    /// tabu fixed size
+    l:usize,
+    /// tabu dynamic size
+    lambda: f64,
+    /// number of iterations since the beginning of the search
+    nb_iter: usize,
+    /// decisions[c]: last iteration in which color c was used
+    decisions: Vec<Option<usize>>,
+    /// random number generator
+    rng: ThreadRng,
+}
+
+impl TabuTenure<usize, usize> for EjectionTabuTenure {
+    fn insert(&mut self, _n:&usize, d:usize) {
+        self.decisions[d] = Some(self.nb_iter);
+        self.nb_iter += 1;
+    }
+
+    fn contains(&mut self, n:&usize, d:&usize) -> bool {
+        match self.decisions[*d] {
+            None => false,
+            Some(i) => {
+                let rand_l = self.rng.gen_range(0..=self.l);
+                let threshold = rand_l + (self.lambda * (*n as f64)) as usize;
+                threshold > self.nb_iter || i >= self.nb_iter - threshold
+            }
+        }
+    }
+}
+
+impl EjectionTabuTenure {
+    /** creates a tabu tenure given:
+     - l: fixed tabu size
+     - λ: variable tabu size
+     - c: the maximum number of colors
+    */
+    pub fn new(l:usize, lambda: f64, c:usize) -> Self {
+        Self {
+            l, lambda,
+            nb_iter: 0,
+            decisions: vec![None ; c],
+            rng: rand::thread_rng(),
+        }
+    }
+}
+
 
 
 /** Implements an ejection chain procedure.
@@ -14,12 +66,12 @@ use crate::color::{ColoringInstance, Solution, checker};
 Each time an insertion is performed, mark the color tabu (cannot be inserted again)
 */
 pub fn ejection_chain_iteration(inst:Rc<dyn ColoringInstance>, mut solution:Solution) -> Solution {
-    let mut tabu = BitSet::new();
+    let mut tabu = EjectionTabuTenure::new(2,0.6,solution.len());
     // identify $c_1$ the minimum size color
     let solution_copy = solution.clone(); // store the solution in case we fail improving it
     let (c1,_) = solution.iter().enumerate()
         .min_by_key(|(_,c)| c.len()).unwrap();
-    tabu.insert(c1);
+    tabu.insert(&0,c1);
     println!("ejection chains: minimum color: {} (size:{})", c1, solution[c1].len());
     let mut non_affected_vertices:Vec<usize> = solution[c1].clone();
     let mut failed_improving = false;
@@ -42,7 +94,7 @@ pub fn ejection_chain_iteration(inst:Rc<dyn ColoringInstance>, mut solution:Solu
             res
         }).collect();
         let (c2, nb_conflicts) = match nb_conflicts.iter().enumerate()
-            .filter(|(c2,_)| !tabu.contains(*c2))
+            .filter(|(c2,n)| *c2!=c1 && !tabu.contains(*n, c2))
             .min_by_key(|(_,v)| **v) {
                 None => { 
                     failed_improving = true;
@@ -70,7 +122,7 @@ pub fn ejection_chain_iteration(inst:Rc<dyn ColoringInstance>, mut solution:Solu
         }
         new_c2.append(&mut non_affected_vertices.clone());
         solution[c2] = new_c2;
-        tabu.insert(c2); // c2 is now tabu
+        tabu.insert(&0, c2); // c2 is now tabu
         if conflicting_vertices.is_empty() { // solution with less colors found or max_iter reached
             break;
         }
@@ -126,8 +178,17 @@ mod tests {
         let solution = cgshop_aog(cg_inst.clone(), false);
         println!("nb initial colors: {}", solution.len());
         let _ = ejection_chains(cg_inst, solution);
-        // let solution2 = ejection_chain_iteration(cg_inst.clone(), solution);
-        // let solution3 = ejection_chain_iteration(cg_inst, solution2);
+    }
+
+    #[test]
+    fn test_read_instance_sqrm() {
+        let cg_inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
+            true
+        ));
+        let solution = cgshop_aog(cg_inst.clone(), false);
+        println!("nb initial colors: {}", solution.len());
+        let _ = ejection_chains(cg_inst, solution);
     }
 
 }

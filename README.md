@@ -22,8 +22,7 @@ Discrete Optimization Global Search for the Graph Coloring problem
 
 # What's next (CGSHOP)?
 
-- [ ] unit test instances for the CGSHOP
-- [ ] orientation sorting greedy
+- [ ] RLF like (but inverting orientation iteration at each color)
 
 # What's next (algorithms)?
 
