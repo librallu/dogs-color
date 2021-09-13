@@ -8,6 +8,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Write};
 use std::cmp::{max, min};
+use bit_set::BitSet;
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 
@@ -167,6 +168,47 @@ impl CGSHOPInstance {
         new_cache_file.write_all(serde_json::to_string(&degree_cache_value).unwrap().as_bytes())
             .expect("CGHSOPSolution.to_file: unable to write in the file");
     }
+
+    /// merges segments that can be merged
+    pub fn preprocess_merge(&self) {
+        let n = self.nb_vertices();
+        let mut sorted_vertices:Vec<VertexId> = (0..n).collect();
+        sorted_vertices.sort_by_key(|u| n-self.degree(*u));
+        let mut merged = BitSet::new();
+        let mut nb_merged = 0;
+        for u in sorted_vertices {
+            if !merged.contains(u) { // skip if u is already merged
+                // build neighborhood of u
+                let mut neighs_u = BitSet::new();
+                for v in self.neighbors(u) { neighs_u.insert(v); }
+                // for each other non-merged & non-conflicting vertex v, check if N(v) ⊆ N(u)
+                for v in 0..n {
+                    if u != v && !merged.contains(v) && !neighs_u.contains(v) && self.degree(v) <= self.degree(u) {
+                        // let mut neighs_v = BitSet::new();
+                        let mut is_subset = true;
+                        for w in 0..n { // checks
+                            if !neighs_u.contains(w) && self.are_adjacent(v, w) {
+                                is_subset = false;
+                                break;
+                            }
+                        }
+                        if is_subset {
+                            nb_merged += 1;
+                            merged.insert(v);
+                            println!("merged {}\t/{} \t merge {} -> {}", nb_merged, n, v, u);
+                        }
+                        // for w in self.neighbors(v) { neighs_v.insert(w); }
+                        // if neighs_v.is_subset(&neighs_u) { // merge v
+                        //     nb_merged += 1;
+                        //     merged.insert(v);
+                        //     println!("merged {}\t/{} \t merge {} -> {}", nb_merged, n, v, u);
+                        // }
+                    }
+                }
+            }
+        }
+    }
+
 }
 
 
@@ -351,6 +393,18 @@ mod tests {
         let compact_instance=  cg_inst.to_graph_coloring_instance();
         assert_eq!(compact_instance.nb_vertices(), 5000);
         assert_eq!(compact_instance.nb_edges(), 7772071);
+    }
+
+
+
+    #[test]
+    fn test_preprocess_merge() {
+        let cg_inst = CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json",
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json",
+            true
+        );
+        cg_inst.preprocess_merge();
     }
 }
 

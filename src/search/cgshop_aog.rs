@@ -6,7 +6,6 @@ use ordered_float::OrderedFloat;
 use crate::{cgshop::CGSHOPInstance, color::{ColoringInstance, Solution}};
 
 
-
 /**
 Admissible Orientation Greedy algorithm for the CGSHOP challenge
 Sorts the segments by orientation and apply a simple coloring algorithm.
@@ -132,6 +131,70 @@ pub fn cgshop_aog_v3(inst:Rc<CGSHOPInstance>, show_completion:bool) -> Solution 
             }
         }
         res.push(current_segments);
+    }
+    res
+}
+
+
+/** which segment orientation to choose */
+#[derive(Debug)]
+pub enum SegmentOrientationStrategy {
+    /// sort by increasing orientation
+    Increasing,
+    /// sort by decreasing orientation
+    Decreasing,
+    /// alternate between each color
+    Alternate
+}
+
+/**
+Admissible Orientation Greedy algorithm for the CGSHOP challenge.
+Adds color by color, sorting segments by orientation (decreasing if even, increasing if odd)
+*/
+pub fn cgshop_aog_v4(inst:Rc<CGSHOPInstance>, show_completion:bool, orientation_strategy:SegmentOrientationStrategy) -> Solution {
+    let n = inst.nb_vertices();
+    let mut res:Vec<Vec<usize>> = Vec::new();
+    let mut colored:BitSet = BitSet::with_capacity(n);
+    let mut nb_colored = 0;
+    while nb_colored < n {
+        let mut current_color = Vec::new();
+        // sort remaining segments
+        let mut sorted_segments:Vec<usize> = (0..n).filter(|i| !colored.contains(*i)).collect();
+        sorted_segments.sort_by_key(|i| {
+            match orientation_strategy {
+                SegmentOrientationStrategy::Increasing => {
+                    OrderedFloat(inst.segment_orientation(*i))
+                },
+                SegmentOrientationStrategy::Decreasing => {
+                    -OrderedFloat(inst.segment_orientation(*i))
+                },
+                SegmentOrientationStrategy::Alternate => {
+                    if res.len() % 2 == 0 {
+                        OrderedFloat(inst.segment_orientation(*i))
+                    } else {
+                        -OrderedFloat(inst.segment_orientation(*i))
+                    }
+                }
+            }
+        });
+        // iterate over segments, and add them if possible
+        for i in &sorted_segments {
+            let mut is_conflicting = false;
+            for j in &current_color {
+                if inst.are_adjacent(*i, *j) {
+                    is_conflicting = true;
+                    break;
+                }
+            }
+            if !is_conflicting {
+                current_color.push(*i);
+                nb_colored += 1;
+                colored.insert(*i);
+                if show_completion && nb_colored % 1000 == 0 { println!("colored {} / {}...", nb_colored, n); }
+            }
+        }
+        // add to the color pool and repeat
+        res.push(current_color);
     }
     res
 }
@@ -268,6 +331,33 @@ mod tests {
         cg_inst.display_statistics();
         let solution = cgshop_aog(cg_inst, true);
         println!("nb colors: {}", solution.len());
+    }
+
+    // TESTS AOG V4
+    #[test]
+    fn sqrm_5k_1_aog_v4() {
+        let cg_inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json",
+            true
+        ));
+        let solution_i = cgshop_aog_v4(
+            cg_inst.clone(),
+            false,
+            SegmentOrientationStrategy::Increasing
+        );
+        println!("Increasing:\t{}", solution_i.len());
+        let solution_d = cgshop_aog_v4(
+            cg_inst.clone(),
+            false,
+            SegmentOrientationStrategy::Decreasing
+        );
+        println!("Decreasing:\t{}", solution_d.len());
+        let solution_a = cgshop_aog_v4(
+            cg_inst,
+            false,
+            SegmentOrientationStrategy::Alternate
+        );
+        println!("Alternate :\t{}", solution_a.len());
     }
 
 

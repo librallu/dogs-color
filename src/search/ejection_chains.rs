@@ -66,7 +66,7 @@ impl EjectionTabuTenure {
 Each time an insertion is performed, mark the color tabu (cannot be inserted again)
 */
 pub fn ejection_chain_iteration(inst:Rc<dyn ColoringInstance>, mut solution:Solution) -> Solution {
-    let mut tabu = EjectionTabuTenure::new(2,0.6,solution.len());
+    let mut tabu = EjectionTabuTenure::new(10,0.6,solution.len());
     // identify $c_1$ the minimum size color
     let solution_copy = solution.clone(); // store the solution in case we fail improving it
     let (c1,_) = solution.iter().enumerate()
@@ -183,7 +183,7 @@ mod tests {
     #[test]
     fn test_read_instance_sqrm() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json",
             true
         ));
         let solution = cgshop_aog(cg_inst.clone(), false);

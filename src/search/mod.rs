@@ -21,6 +21,9 @@ pub mod cgshop_stable_generation;
 /// Ejection chains. Removes the smallest color, and try to insert it to the minimum conflicting color.
 pub mod ejection_chains;
 
+/// branch & bound for the CLIQUE problem
+pub mod clique_bnb;
+
 /// utility solvers
 pub mod util;
 
