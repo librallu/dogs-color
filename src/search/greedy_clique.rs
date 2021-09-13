@@ -31,6 +31,10 @@ pub fn greedy_clique(inst:Rc<dyn ColoringInstance>) -> Vec<VertexId> {
             }
         };
     }
+    println!("greedy clique: {}", res.len());
+    // try improving the clique
+    let mut res_bitset = BitSet::new();
+    for s in res.iter() { res_bitset.insert(*s); }
     res
 }
 

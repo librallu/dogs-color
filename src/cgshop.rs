@@ -184,7 +184,6 @@ impl CGSHOPInstance {
                 // for each other non-merged & non-conflicting vertex v, check if N(v) ⊆ N(u)
                 for v in 0..n {
                     if u != v && !merged.contains(v) && !neighs_u.contains(v) && self.degree(v) <= self.degree(u) {
-                        // let mut neighs_v = BitSet::new();
                         let mut is_subset = true;
                         for w in 0..n { // checks
                             if !neighs_u.contains(w) && self.are_adjacent(v, w) {
@@ -197,12 +196,6 @@ impl CGSHOPInstance {
                             merged.insert(v);
                             println!("merged {}\t/{} \t merge {} -> {}", nb_merged, n, v, u);
                         }
-                        // for w in self.neighbors(v) { neighs_v.insert(w); }
-                        // if neighs_v.is_subset(&neighs_u) { // merge v
-                        //     nb_merged += 1;
-                        //     merged.insert(v);
-                        //     println!("merged {}\t/{} \t merge {} -> {}", nb_merged, n, v, u);
-                        // }
                     }
                 }
             }
@@ -401,7 +394,7 @@ mod tests {
     fn test_preprocess_merge() {
         let cg_inst = CGSHOPInstance::from_file(
             "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json",
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json",
             true
         );
         cg_inst.preprocess_merge();
