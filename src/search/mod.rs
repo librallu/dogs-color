@@ -24,6 +24,9 @@ pub mod ejection_chains;
 /// branch & bound for the CLIQUE problem
 pub mod clique_bnb;
 
+/// swap moves for the CLIQUE problem
+pub mod clique_swap;
+
 /// utility solvers
 pub mod util;
 

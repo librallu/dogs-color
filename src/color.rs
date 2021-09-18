@@ -33,6 +33,9 @@ pub trait ColoringInstance:Debug {
 
     /// returns all edges in the instance
     fn edges(&self) -> &[(VertexId, VertexId)];
+
+    /// iterator over vertices of the graph
+    fn vertices(&self) -> Box<dyn Iterator<Item=VertexId>> { Box::new(0..self.nb_vertices()) }
 }
 
 

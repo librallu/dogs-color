@@ -1,9 +1,12 @@
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
 use ordered_float::OrderedFloat;
 use bit_set::BitSet;
 
-use dogs::search_space::{GuidedSpace, Identifiable, SearchSpace, ToSolution, TotalNeighborGeneration};
+use dogs::{
+    search_algorithm::{SearchAlgorithm, NeverStoppingCriterion},
+    search_space::{GuidedSpace, Identifiable, SearchSpace, ToSolution, TotalNeighborGeneration}, tree_search::greedy::Greedy
+};
 
 use crate::color::{ColoringInstance, VertexId};
 
@@ -106,12 +109,12 @@ impl SearchSpace<Node, i64> for CLIQUESpace {
 
     fn bound(&mut self, node: &Node) -> i64 {
         let g  = self.g_cost(node);
-        let m = (node.candidate_degrees as f64/2.).floor(); // ∑ d(v) = 2m <=> m = (∑ d(v))/2
-        let h = -((1. + (1.+8.*m).sqrt())/2.).floor() as i64; 
+        // let m = (node.candidate_degrees as f64/2.).floor(); // ∑ d(v) = 2m <=> m = (∑ d(v))/2
+        // let h = -((1. + (1.+8.*m).sqrt())/2.).floor() as i64; 
         // let h = -node.nb_candidates;
         // let m = (node.candidate_degrees as f64/2.).floor();
         // let h = -m.sqrt() as i64;
-        // let h = 0;
+        let h = 0;
         g+h
     }
 
@@ -140,52 +143,73 @@ impl TotalNeighborGeneration<Node> for CLIQUESpace {
     }
 }
 
+
+/** runs a simple greedy algorithm to compute a CLIQUE. */
+pub fn greedy_clique(inst:Rc<dyn ColoringInstance>) -> Vec<VertexId> {
+    let space = Rc::new(RefCell::new(CLIQUESpace::new(inst)));
+    let mut search = Greedy::new(space);
+    search.run(NeverStoppingCriterion::default());
+    search.get_manager().best().as_ref().unwrap().clique.clone()
+}
+
+
+/** runs a simple optimized greedy algorithm to compute a CLIQUE. */
+pub fn adhoc_greedy_clique(inst:Rc<dyn ColoringInstance>, show_completion:bool) -> Vec<VertexId> {
+    // for each node, keep its "candidates" degree
+    let mut res = Vec::new();
+    let mut nb_candidates = inst.nb_vertices();
+    let mut candidates = BitSet::with_capacity(inst.nb_vertices());
+    let mut candidate_degrees:Vec<usize> = inst.vertices()
+        .map(|u| {
+            candidates.insert(u);
+            inst.degree(u)
+        }).collect();
+    // while we can add another candidate
+    while nb_candidates > 0 {
+        let current = candidates.iter().max_by_key(|u| candidate_degrees[*u]).unwrap();
+        // add current to the result
+        res.push(current);
+        if show_completion { println!("clique size: {}", res.len()); }
+        nb_candidates -= 1;
+        candidates.remove(current);
+        // update candidates and candidate degrees
+        for u in candidates.iter().collect::<Vec<VertexId>>() {
+            if !inst.are_adjacent(u, current) { // remove u from the candidate list
+                candidates.remove(u);
+                nb_candidates -= 1;
+                // remove degrees for each neighbor of u
+                for v in inst.neighbors(u) {
+                    candidate_degrees[v] -= 1;
+                }
+            } else { // update the candidate degrees
+                candidate_degrees[u] -= 1;
+            }
+        }
+    }
+    res
+}
+
+
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
     
     use crate::cgshop::CGSHOPInstance;
-    use dogs::combinators::bounding::BoundingCombinator;
-    use dogs::combinators::gcost_dominance::GcostDominanceTsCombinator;
-    use dogs::combinators::helper::discrepancy::{ConstantDiscrepancy, LinearDiscrepancy, RatioToBestDiscrepancy};
-    use dogs::combinators::lds::LDSCombinator;
-    use dogs::combinators::pruning::PruningCombinator;
-    use dogs::metric_logger::MetricLogger;
-    use dogs::{combinators::stats::StatTsCombinator};
-    use dogs::tree_search::depth_first::DepthFirstSearch;
-    use std::cell::RefCell;
-    use dogs::search_algorithm::{NeverStoppingCriterion, SearchAlgorithm, TimeStoppingCriterion};
     
     #[test]
-    pub fn test_ibs() {
-        let logger = Rc::new(MetricLogger::default());
+    fn test_greedy() {
         let inst = Rc::new(CGSHOPInstance::from_file(
             // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json",
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json",
             // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_10K.instance.json",
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_100K.instance.json",
             // "./insts/cgshop_22_examples/tiny10.instance.json",
             true
         ));
-        let space = Rc::new(RefCell::new(
-            LDSCombinator::new(
-                StatTsCombinator::new(
-                    BoundingCombinator::new(
-                        PruningCombinator::new(
-                            GcostDominanceTsCombinator::new(
-                                CLIQUESpace::new(inst)
-                            )
-                        )
-                    ).bind_logger(Rc::downgrade(&logger))
-                ).bind_logger(Rc::downgrade(&logger))
-            , 5.0, LinearDiscrepancy{})
-        ));
-        logger.display_headers();
-        // let mut search = create_iterative_beam_search(space, 1.0, 2.0);
-        let mut search = DepthFirstSearch::new(space.clone());
-        // search.run(NeverStoppingCriterion::default());
-        search.run(TimeStoppingCriterion::new(60.));
-        space.borrow_mut().display_statistics();
+        let sol = adhoc_greedy_clique(inst, true);
+        println!("clique size: {}", sol.len());
     } 
 
 }
