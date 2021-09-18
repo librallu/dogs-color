@@ -145,8 +145,9 @@ mod tests {
         let inst = Rc::new(CGSHOPInstance::from_file(
             // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
             // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json",
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_6.instance.json",
             // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json",
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_6.instance.json",
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_2.instance.json",
             // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_100K_1.instance.json",
             // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_500K_1.instance.json",
             // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json",
@@ -158,7 +159,7 @@ mod tests {
             true
         ));
         let sol = greedy_clique(inst.clone());
-        clique_swaps(inst.clone(), sol, inst.nb_vertices()*2, true);
+        clique_swaps(inst.clone(), sol, inst.nb_vertices(), true);
     }
 
 
@@ -179,7 +180,7 @@ mod tests {
             true
         ));
         let sol = greedy_clique(inst.clone());
-        clique_swaps(inst.clone(), sol, inst.nb_vertices()*2, true);
+        clique_swaps(inst.clone(), sol, inst.nb_vertices(), true);
     }
 
     #[test]
@@ -199,6 +200,6 @@ mod tests {
             true
         ));
         let sol = greedy_clique(inst.clone());
-        clique_swaps(inst.clone(), sol, inst.nb_vertices()*2, true);
+        clique_swaps(inst.clone(), sol, inst.nb_vertices(), true);
     }
 }
