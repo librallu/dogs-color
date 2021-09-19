@@ -1,0 +1,22 @@
+{
+    "experiment_name":   "cgshop_clique_tabu",
+    "nb_parallel_tasks": 5,
+    "fallback_threads": 5,
+    "instance_list":     "../insts/cgshop22.csv",
+    "output_prefix":     ".",
+    "solvers": [
+        {
+            "name": "clique_tabu_swap",
+            "exe_path": "../target/release/clique_tabu_swap",
+            "params": [
+                {"name":"instance", "values":["#{instance_path}"]},
+                {"name":"time",     "values":["#{time_limit}"]},
+                {"name":"perf",     "values":["#{file_prefix}.stats.json"]},
+                {"name":"solution", "values":["#{file_prefix}.sol"]},
+                {"name":"type",     "values":["cgshop"]}
+            ]
+        }
+    ],
+    "analysis": {
+    }
+}
