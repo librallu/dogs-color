@@ -10,10 +10,19 @@ use std::io::{BufReader, Write};
 use std::cmp::{max, min};
 use bit_set::BitSet;
 use serde::{Serialize, Deserialize};
-use serde_json::json;
 
 use crate::color::{VertexId, ColoringInstance};
-use crate::compact_instance::CompactInstance;
+
+
+/// pre-processed info for the CGSHOP instance
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct PreprocessedData {
+    /// degrees of each segment
+    degrees: Vec<usize>,
+    /// dominations (u dominates v)
+    dominations: Vec<(VertexId,VertexId)>,
+}
+
 
 /** data structure to represent a CGSHOP instance */
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -32,20 +41,23 @@ pub struct CGSHOPInstance {
     edge_j: Vec<usize>,
     /// identifier of the instance
     id: String,
-    /// degrees if they are computed of each segment
+    /// meta-data
+    meta: serde_json::Value,
+    /// adjacency list
     #[serde(skip)]
-    degrees: Vec<usize>,
-    /// preprocessed coordinates
+    neighbors: Vec<BitSet>,
+    /// integer coordinates
     #[serde(skip)]
     coordinates: Vec<((i64,i64),(i64,i64))>,
-
+    /// pre-processed data
+    preprocessed: Option<PreprocessedData>,
 }
 
 
 impl ColoringInstance for CGSHOPInstance {
     fn nb_vertices(&self) -> usize { self.m }
 
-    fn degree(&self, u:VertexId) -> usize { self.degrees[u] }
+    fn degree(&self, u:VertexId) -> usize { self.preprocessed.as_ref().unwrap().degrees[u] }
 
     fn neighbors(&self, u:VertexId) -> Vec<VertexId> {
         (0..self.m()).filter(move |v| *v != u)
@@ -53,16 +65,21 @@ impl ColoringInstance for CGSHOPInstance {
     }
 
     fn are_adjacent(&self, u:VertexId, v:VertexId) -> bool {
-        are_intersecting(&self.coordinates[u], &self.coordinates[v])
+        // are_intersecting(
+        //     &self.coordinates[u],
+        //     &self.coordinates[v]
+        // )
+        self.neighbors[u].contains(v)
     }
 
     fn display_statistics(&self) {
         println!("{:<10} vertices", self.n());
         println!("{:<10} segments", self.m());
-        // println!("\tdegrees: {:?}", self.degrees);
+        println!("{:<10} dominations", self.preprocessed.as_ref().unwrap().dominations.len());
     }
 
     fn write_solution(&self, filename:&str, solution:&[Vec<usize>]) {
+        // TODO change solution to match preprossed segments
         CGSHOPSolution::from_solution(self.id(), solution).to_file(filename);
     }
 
@@ -72,32 +89,64 @@ impl ColoringInstance for CGSHOPInstance {
 
 impl CGSHOPInstance {
     /** reads a CGSHOP instance from a file. */
-    pub fn from_file(filename:&str, should_compute_degrees:bool) -> Self {
+    pub fn from_file(filename:&str) -> Self {
         let str = fs::read_to_string(filename)
             .expect("Error while reading the file...");
         let mut res:Self = serde_json::from_str(&str)
             .expect("Error while deserializing the json file");
-        // computing coordinates cache
+        // pre-process informations if needed
+        println!("CGSHOP Instance: compute neighbors...");
+        let n = res.nb_vertices();
         res.coordinates = (0..res.m()).map(|s| res.build_coordinates(s)).collect();
-        if should_compute_degrees {
-            res.compute_degrees();
-        }
-        res
-    }
-
-    /** converts to a graph coloring instance. */
-    pub fn to_graph_coloring_instance(&self) -> CompactInstance {
-        let nb_vertices = self.m();
-        let mut adj_list:Vec<Vec<usize>> = vec![vec![] ; nb_vertices];
-        for i in 0..nb_vertices {
+        res.neighbors = vec![BitSet::with_capacity(n) ; n];
+        for i in 0..n {
+            if i % 1000 == 0 { println!("computing neighbors ({} / {})...", i, n); }
             for j in 0..i {
-                if self.are_adjacent(i, j) {
-                    adj_list[i].push(j);
-                    adj_list[j].push(i);
+                if are_intersecting(&res.coordinates[i], &res.coordinates[j]) {
+                    res.neighbors[i].insert(j);
+                    res.neighbors[j].insert(i);
                 }
             }
         }
-        CompactInstance::new(adj_list)
+        if res.preprocessed.is_none() {
+            let degrees:Vec<usize> = (0..n).map(|i| res.neighbors[i].len()).collect();
+            println!("\t{} conflicts", degrees.iter().map(|e| *e as i64).sum::<i64>());
+            // preprocess degree & neighbors
+            println!("CGSHOP Instance: computing degrees & neighbors...");
+            // compute domiations
+            let mut dominations:Vec<(VertexId,VertexId)> = Vec::new();
+            let mut not_dominated = BitSet::with_capacity(n);
+            for i in 0..n { not_dominated.insert(i); }
+            for i in 0..n {
+                if i % 1000 == 0 { println!("computing dominances ({} / {})...", i, n); }
+                // list vertices dominated by i
+                if not_dominated.contains(i) { // no need to check because domination is transitive
+                    let mut dominating = not_dominated.clone();
+                    for j in res.neighbors[i].iter() {
+                        dominating.intersect_with(&res.neighbors[j]);
+                        if dominating.is_empty() { break; } // stop if no more remaining vertex
+                    }
+                    match dominating.iter().find(|j| *j!=i) {
+                        None => {},
+                        Some(j) => { // if a vertex v dominates i
+                            dominations.push((j,i));
+                            not_dominated.remove(i);
+                        }
+                    };
+                }
+            }
+            // update res
+            res.preprocessed = Some(PreprocessedData {
+                degrees, dominations
+            });
+            // write the new instance
+            let res_str = serde_json::to_string(&res).unwrap();
+            let mut file = std::fs::File::create(filename)
+                .expect("unable to re-open instance file.");
+            file.write_all(res_str.as_bytes())
+                .expect("unable to write instance file.");
+        }
+        res
     }
 
     /// number of vertices
@@ -131,75 +180,10 @@ impl CGSHOPInstance {
 
     /// Orientation of the edge [0;π]
     pub fn segment_orientation(&self, i:usize) -> f64 {
-        let ((ax,ay),(bx,by)) = &self.coordinates[i];
+        let ((ax,ay),(bx,by)) = self.coordinates[i];
         let dx = (bx - ax) as f64;
         let dy = (by - ay) as f64;
         (dy/dx).atan() * 180. / PI
-    }
-
-    /// computes the degrees for each edge
-    fn compute_degrees(&mut self) {
-        let cache_filename = format!("tmp/{}.degree.cache.json", self.id());
-        if let Ok(str) = fs::read_to_string(&cache_filename) {
-            self.degrees = serde_json::from_str(&str)
-                .expect("Error while deserializing the json file");
-            println!("reusing the cached degrees.");
-            return;
-        }
-        println!("CGSHOP Instance: computing degrees...");
-        let n = self.nb_vertices();
-        let mut degrees:Vec<usize> = vec![0 ; n];
-        for i in 0..n {
-            let mut current_neighbors = Vec::new();
-            if i % 1000 == 0 { println!("computed degrees for {} / {}...", i, n); }
-            for j in 0..i {
-                if self.are_adjacent(i, j) {
-                    current_neighbors.push(j);
-                    degrees[i] += 1;
-                    degrees[j] += 1;
-                }
-            }
-        }
-        self.degrees = degrees;
-        // write cache 
-        let mut new_cache_file = File::create(&cache_filename)
-            .expect("CGHSOP Instance cache: unable to open the file");
-        let degree_cache_value = json!(self.degrees);
-        new_cache_file.write_all(serde_json::to_string(&degree_cache_value).unwrap().as_bytes())
-            .expect("CGHSOPSolution.to_file: unable to write in the file");
-    }
-
-    /// merges segments that can be merged
-    pub fn preprocess_merge(&self) {
-        let n = self.nb_vertices();
-        let mut sorted_vertices:Vec<VertexId> = (0..n).collect();
-        sorted_vertices.sort_by_key(|u| n-self.degree(*u));
-        let mut merged = BitSet::new();
-        let mut nb_merged = 0;
-        for u in sorted_vertices {
-            if !merged.contains(u) { // skip if u is already merged
-                // build neighborhood of u
-                let mut neighs_u = BitSet::new();
-                for v in self.neighbors(u) { neighs_u.insert(v); }
-                // for each other non-merged & non-conflicting vertex v, check if N(v) ⊆ N(u)
-                for v in 0..n {
-                    if u != v && !merged.contains(v) && !neighs_u.contains(v) && self.degree(v) <= self.degree(u) {
-                        let mut is_subset = true;
-                        for w in 0..n { // checks
-                            if !neighs_u.contains(w) && self.are_adjacent(v, w) {
-                                is_subset = false;
-                                break;
-                            }
-                        }
-                        if is_subset {
-                            nb_merged += 1;
-                            merged.insert(v);
-                            println!("merged {}\t/{} \t merge {} -> {}", nb_merged, n, v, u);
-                        }
-                    }
-                }
-            }
-        }
     }
 
 }
@@ -355,49 +339,62 @@ mod tests {
     }
 
     #[test]
-    fn test_compact_tiny() {
-        let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json",
-            true
+    fn test_preprocess_merge_visp() {
+        let _ = CGSHOPInstance::from_file(
+            "./insts/cgshop_22_examples/visp_5K.instance.json",
         );
-        let compact_instance=  cg_inst.to_graph_coloring_instance();
-        assert_eq!(compact_instance.nb_vertices(), 10);
-        assert_eq!(compact_instance.nb_edges(), 5);
-
+        // cg_inst.preprocess_merge();
     }
 
     #[test]
-    fn test_compact_visp() {
-        let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json",
-            true
+    fn test_preprocess_merge_visp10k() {
+        let _ = CGSHOPInstance::from_file(
+            "./insts/cgshop_22_examples/visp_10K.instance.json",
         );
-        let compact_instance=  cg_inst.to_graph_coloring_instance();
-        assert_eq!(compact_instance.nb_vertices(), 5874);
-        assert_eq!(compact_instance.nb_edges(), 3491329);
+        // cg_inst.preprocess_merge();
     }
 
     #[test]
-    fn test_compact_sqrm() {
-        let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
-            true
+    fn test_preprocess_merge_visp50k() {
+        let _ = CGSHOPInstance::from_file(
+            "./insts/cgshop_22_examples/visp_50K.instance.json",
         );
-        let compact_instance=  cg_inst.to_graph_coloring_instance();
-        assert_eq!(compact_instance.nb_vertices(), 5000);
-        assert_eq!(compact_instance.nb_edges(), 7772071);
+        // cg_inst.preprocess_merge();
     }
 
-
+    #[test]
+    fn test_read_reecn() {
+        let _ = CGSHOPInstance::from_file(
+            "./insts/cgshop22/reecn73116.instance.json",
+        );
+    }
 
     #[test]
-    fn test_preprocess_merge() {
-        let cg_inst = CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_10K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json",
-            true
+    fn test_read_rsqrp() {
+        let _ = CGSHOPInstance::from_file(
+            "./insts/cgshop22/rsqrp24641.instance.json",
         );
-        cg_inst.preprocess_merge();
+    }
+
+    #[test]
+    fn test_read_sqrp() {
+        let _ = CGSHOPInstance::from_file(
+            "./insts/cgshop22/sqrp73525.instance.json",
+        );
+    }
+
+    #[test]
+    fn test_read_visp() {
+        let _ = CGSHOPInstance::from_file(
+            "./insts/cgshop22/visp73369.instance.json",
+        );
+    }
+
+    #[test]
+    fn test_read_vispecn() {
+        let _ = CGSHOPInstance::from_file(
+            "./insts/cgshop22/vispecn74166.instance.json",
+        );
     }
 }
 

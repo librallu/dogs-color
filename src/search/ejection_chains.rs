@@ -102,7 +102,7 @@ pub fn ejection_chain_iteration(inst:Rc<dyn ColoringInstance>, mut solution:Solu
                 },
                 Some(res) => res
             };
-        println!("inserting into {} ({} conflicts)", c2, nb_conflicts);
+        // println!("inserting into {} ({} conflicts)", c2, nb_conflicts);
         // insert non affected edges and eject conflicting edges
         let mut conflicting_vertices:Vec<usize> = Vec::with_capacity(*nb_conflicts);
         let mut new_c2:Vec<usize> = Vec::with_capacity(solution[c2].len()-nb_conflicts+non_affected_vertices.len());
@@ -172,8 +172,7 @@ mod tests {
     #[test]
     fn test_read_instance_visp() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json"
         ));
         let solution = cgshop_aog(cg_inst.clone(), false);
         println!("nb initial colors: {}", solution.len());
@@ -183,8 +182,7 @@ mod tests {
     #[test]
     fn test_read_instance_sqrm() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_100K_1.instance.json"
         ));
         let solution = cgshop_aog(cg_inst.clone(), false);
         println!("nb initial colors: {}", solution.len());

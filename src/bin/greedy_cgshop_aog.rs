@@ -21,7 +21,7 @@ pub fn main() {
         sol_file,
         perf_file
     ) = read_params(main_args);
-    let instance = Rc::new(CGSHOPInstance::from_file(&inst_filename, true));
+    let instance = Rc::new(CGSHOPInstance::from_file(&inst_filename));
     // solve it
     let t_start = Instant::now();
     let solution = cgshop_aog(instance.clone(), true);

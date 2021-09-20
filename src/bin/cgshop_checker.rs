@@ -16,7 +16,7 @@ pub fn main() {
     let sol_filename = main_args.value_of("solution").unwrap();
     // read files
     let instance:Rc<dyn ColoringInstance> = Rc::new(
-        CGSHOPInstance::from_file(inst_filename, false)
+        CGSHOPInstance::from_file(inst_filename)
     );
     let solution:CGSHOPSolution = CGSHOPSolution::from_file(sol_filename);
     // call checker

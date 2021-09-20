@@ -19,14 +19,11 @@
 /// coloring instance base trait, solutions and checker
 pub mod color;
 
-/// read/write DIMACS formats
+/// read/write DIMACS instances & formats
 pub mod dimacs;
 
 /// read/write CGSHOP instances & solutions (specialized for very large coloring instances)
 pub mod cgshop;
-
-/// compact instance (use this for small-medium sized instances)
-pub mod compact_instance;
 
 /// helper and utility methods for executables
 pub mod util;

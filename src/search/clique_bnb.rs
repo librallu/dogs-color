@@ -201,12 +201,11 @@ mod tests {
     #[test]
     fn test_greedy() {
         let inst = Rc::new(CGSHOPInstance::from_file(
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json",
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_100K.instance.json",
-            // "./insts/cgshop_22_examples/tiny10.instance.json",
-            true
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json"
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json"
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json"
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_100K.instance.json"
+            // "./insts/cgshop_22_examples/tiny10.instance.json"
         ));
         let sol = adhoc_greedy_clique(inst, true);
         println!("clique size: {}", sol.len());

@@ -55,6 +55,10 @@ impl CliqueSwapTenure {
             rng: rand::thread_rng(),
         }
     }
+
+    // pub fn reset(&mut self) {
+    //     self.nb_iter += self.decisions.len()+1;
+    // }
 }
 
 
@@ -79,7 +83,7 @@ pub fn clique_swaps(inst:Rc<dyn ColoringInstance>, sol:Vec<VertexId>, nb_max_ite
         }
     }
     let mut nb_iter = 0;
-    let mut tabu = CliqueSwapTenure::new(inst.nb_vertices()/5, 0.6, inst.nb_vertices());
+    let mut tabu = CliqueSwapTenure::new(inst.nb_vertices()/5, 0.5, inst.nb_vertices());
     // println!("sum_clique:{}", sum_clique_degrees);
     // println!("nb_clique_see:{:?}", nb_clique_see);
     loop {
@@ -88,7 +92,9 @@ pub fn clique_swaps(inst:Rc<dyn ColoringInstance>, sol:Vec<VertexId>, nb_max_ite
         if show_completion && nb_iter % 1000 == 0 { println!(" {} \t {}/{}", best.len(), nb_iter, nb_max_iter); }
         // search for the vertex that sees the maximum elements in the clique
         let u = match inst.vertices()
-            .filter(|u| !inside_clique.contains(*u) && !tabu.contains(&0, u))
+            // .filter(|u| !inside_clique.contains(*u) && !tabu.contains(&0, u))
+            // only consider non added vertices and non-tabu (with a simple aspiration criterion)
+            .filter(|u| !inside_clique.contains(*u) && (nb_clique_see[*u] as usize == current_clique.len() || !tabu.contains(&0, u)))
             .max_by(|u,v| nb_clique_see[*u].cmp(&nb_clique_see[*v])
                 .then_with(|| inst.degree(*u).cmp(&inst.degree(*v)))
             ){
@@ -117,6 +123,7 @@ pub fn clique_swaps(inst:Rc<dyn ColoringInstance>, sol:Vec<VertexId>, nb_max_ite
         if to_remove.is_empty() && current_clique.len() > best.len() {
             best = current_clique.clone();
             println!("new best clique! ({})", best.len());
+            // tabu.reset(); // reset the tabu list
             for a in best.iter() {
                 for b in best.iter() {
                     if a < b {
@@ -143,61 +150,20 @@ mod tests {
     #[test]
     fn test_run() {
         let inst = Rc::new(CGSHOPInstance::from_file(
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_6.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json",
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_2.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_100K_1.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_500K_1.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_10K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_100K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_1M.instance.json",
-            // "./insts/cgshop_22_examples/tiny10.instance.json",
-            true
-        ));
-        let sol = greedy_clique(inst.clone());
-        clique_swaps(inst.clone(), sol, inst.nb_vertices(), true);
-    }
-
-
-    #[test]
-    fn test_run2() {
-        let inst = Rc::new(CGSHOPInstance::from_file(
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json",
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_100K_1.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_500K_1.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_10K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_100K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_1M.instance.json",
-            // "./insts/cgshop_22_examples/tiny10.instance.json",
-            true
-        ));
-        let sol = greedy_clique(inst.clone());
-        clique_swaps(inst.clone(), sol, inst.nb_vertices(), true);
-    }
-
-    #[test]
-    fn test_run3() {
-        let inst = Rc::new(CGSHOPInstance::from_file(
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_100K_1.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_500K_1.instance.json",
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_1M_1.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_10K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_100K.instance.json",
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_1M.instance.json",
-            // "./insts/cgshop_22_examples/tiny10.instance.json",
-            true
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json"
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_4.instance.json"
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json"
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_6.instance.json"
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_6.instance.json"
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_4.instance.json"
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_100K_6.instance.json"
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_500K_6.instance.json"
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json"
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_10K.instance.json"
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json"
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_100K.instance.json"
+            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_1M.instance.json"
+            // "./insts/cgshop_22_examples/tiny10.instance.json"
         ));
         let sol = greedy_clique(inst.clone());
         clique_swaps(inst.clone(), sol, inst.nb_vertices(), true);

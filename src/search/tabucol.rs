@@ -314,10 +314,9 @@ pub fn tabucol<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringInstance>, nb_ini
 
 #[cfg(test)]
 mod tests {
-
-    use crate::compact_instance::CompactInstance;
-
     use super::*;
+    
+    use crate::dimacs::DimacsInstance;
 
     use std::cell::RefCell;
 
@@ -329,7 +328,7 @@ mod tests {
 
     #[test]
     fn test_root_node() {
-        let inst = Rc::new(CompactInstance::from_file("insts/instances-dimacs1/le450_15a.col"));
+        let inst = Rc::new(DimacsInstance::from_file("insts/instances-dimacs1/le450_15a.col"));
         let mut search_state = SearchState::random_solution(inst, 20);
         let mut initial_node = search_state.initial();
         println!("{:?}", initial_node);
@@ -340,7 +339,7 @@ mod tests {
 
     #[test]
     fn test_simple_descent() {
-        let inst = Rc::new(CompactInstance::from_file("insts/instances-dimacs1/le450_15a.col"));
+        let inst = Rc::new(DimacsInstance::from_file("insts/instances-dimacs1/le450_15a.col"));
         let mut search_state = SearchState::random_solution(inst, 17);
         let mut current_node = search_state.initial();
         println!("{:?}", current_node);
@@ -359,7 +358,7 @@ mod tests {
 
     #[test]
     fn test_greedy() {
-        let inst = Rc::new(CompactInstance::from_file("insts/instances-dimacs1/DSJC125.9.col"));
+        let inst = Rc::new(DimacsInstance::from_file("insts/instances-dimacs1/DSJC125.9.col"));
         let nb_initial_colors:usize = 46;
         let logger = Rc::new(MetricLogger::default());
         let search_state = Rc::new(RefCell::new(
@@ -380,7 +379,7 @@ mod tests {
 
     #[test]
     fn test_metaheuristic() {
-        let inst = Rc::new(CompactInstance::from_file("insts/instances-dimacs1/le450_15a.col"));
+        let inst = Rc::new(DimacsInstance::from_file("insts/instances-dimacs1/le450_15a.col"));
         let nb_initial_colors:usize = 20;
         let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3.);
         tabucol(inst, nb_initial_colors, stopping_criterion, None);
@@ -388,7 +387,7 @@ mod tests {
 
     #[test]
     fn test_metaheuristic_flat1000() {
-        let inst = Rc::new(CompactInstance::from_file("insts/instances-dimacs1/flat1000_76_0.col"));
+        let inst = Rc::new(DimacsInstance::from_file("insts/instances-dimacs1/flat1000_76_0.col"));
         let nb_initial_colors:usize = 112;
         let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(5.);
         tabucol(inst, nb_initial_colors, stopping_criterion, None);

@@ -66,8 +66,7 @@ mod tests {
     #[test]
     fn test_read_instance_tiny() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json"
         ));
         cg_inst.display_statistics();
         let solution = cgshop_stables_by_orientation(cg_inst, false);
@@ -77,8 +76,7 @@ mod tests {
     #[test]
     fn test_read_instance_sqrm() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json"
         ));
         cg_inst.display_statistics();
         let solution = cgshop_stables_by_orientation(cg_inst, true);
@@ -88,8 +86,7 @@ mod tests {
     #[test]
     fn test_read_instance_visp() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json"
         ));
         cg_inst.display_statistics();
         let solution = cgshop_stables_by_orientation(cg_inst, true);

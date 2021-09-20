@@ -209,8 +209,7 @@ mod tests {
     #[test]
     fn test_read_instance_tiny() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json"
         ));
         cg_inst.display_statistics();
         let solution = cgshop_aog(cg_inst, false);
@@ -220,8 +219,7 @@ mod tests {
     #[test]
     fn test_read_instance_tiny_v3() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/tiny.json"
         ));
         cg_inst.display_statistics();
         let solution = cgshop_aog_v3(cg_inst, false);
@@ -231,8 +229,7 @@ mod tests {
     #[test]
     fn test_read_instance_visp() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json"
         ));
         cg_inst.display_statistics();
         let solution = cgshop_aog(cg_inst, true);
@@ -244,8 +241,7 @@ mod tests {
     #[test]
     fn test_read_instance_visp_50k() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json"
         ));
         cg_inst.display_statistics();
         let solution = cgshop_aog_v3(cg_inst, true);
@@ -255,8 +251,7 @@ mod tests {
     #[test]
     fn test_read_instance_sqrm() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json"
         ));
         cg_inst.display_statistics();
         let solution = cgshop_aog(cg_inst, true);
@@ -268,8 +263,7 @@ mod tests {
     #[test]
     fn test_read_instance_sqrm_v3() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json"
         ));
         cg_inst.display_statistics();
         let solution = cgshop_aog_v3(cg_inst, true);
@@ -279,8 +273,7 @@ mod tests {
     #[test]
     fn test_read_instance_sqrm_50k() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json"
         ));
         cg_inst.display_statistics();
         let solution = cgshop_aog(cg_inst, true);
@@ -292,8 +285,7 @@ mod tests {
     #[test]
     fn test_read_instance_sqrm_50k_v2() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json"
         ));
         cg_inst.display_statistics();
         let solution = cgshop_aog_v2(cg_inst, true);
@@ -303,8 +295,7 @@ mod tests {
     #[test]
     fn test_read_instance_sqrm_50k_v3() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_1.instance.json"
         ));
         cg_inst.display_statistics();
         let solution = cgshop_aog_v3(cg_inst, true);
@@ -314,8 +305,7 @@ mod tests {
     #[test]
     fn test_read_instance_sqrm_100k() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_100K_1.instance.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_100K_1.instance.json"
         ));
         cg_inst.display_statistics();
         let solution = cgshop_aog(cg_inst, true);
@@ -325,8 +315,7 @@ mod tests {
     #[test]
     fn test_read_instance_sqrm_500k() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_500K_1.instance.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_500K_1.instance.json"
         ));
         cg_inst.display_statistics();
         let solution = cgshop_aog(cg_inst, true);
@@ -337,8 +326,7 @@ mod tests {
     #[test]
     fn sqrm_5k_1_aog_v4() {
         let cg_inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json",
-            true
+            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json"
         ));
         let solution_i = cgshop_aog_v4(
             cg_inst.clone(),
