@@ -5,12 +5,11 @@ use rand::Rng;
 use bit_set::BitSet;
 
 use dogs::search_algorithm::{SearchAlgorithm, StoppingCriterion};
-use dogs::combinators::helper::tabu_tenure::TabuTenure;
+use dogs::combinators::helper::tabu_tenure::{FullTabuTenure, TabuTenure};
 use dogs::search_space::{
     SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution, DecisionSpace
 };
 use dogs::combinators::tabu::TabuCombinator;
-use dogs::combinators::stats::StatTsCombinator;
 use dogs::tree_search::greedy::Greedy;
 use rand::prelude::ThreadRng;
 
@@ -44,7 +43,7 @@ pub struct Node {
     /// decision taken by the node
     decision:Option<Decision>,
     /// number of conflicting edges
-    nb_conflicts: usize,
+    nb_conflicts: i64,
 }
 
 /** implements a specific tabu tenure for the graph coloring
@@ -130,15 +129,65 @@ pub struct SearchState {
     nb_colors: usize,
     /// nb_neigh_colors[v][c]: number of neighbors of v that are assigned color c
     nb_neigh_colors: Vec<Vec<usize>>,
+    /// conflicting_edges[i].contains(j) -> the edges (i,j) are conflicting 
+    conflicting_edges: Vec<BitSet>,
 }
 
 
 impl SearchState {
 
+    /** Creates a new search state, starting by a feasible solution, removing the color
+    with the less vertices.
+    */
+    pub fn from_solution(inst:Rc<dyn ColoringInstance>, sol:&[Vec<VertexId>]) -> Self {
+        let n = inst.nb_vertices();
+        let mut rng = rand::thread_rng();
+        let (mini_color_index,_) = sol.iter().enumerate().min_by_key(|(_,e)| e.len()).unwrap();
+        let mut new_sol:Vec<Vec<VertexId>> = sol.to_vec();
+        let removed_vertices = new_sol.remove(mini_color_index);
+        let nb_colors = new_sol.len();
+        // populate colors
+        let mut colors = vec![0 ; n];
+        for (c,vertices) in new_sol.iter().enumerate() {
+            for v in vertices {
+                colors[*v] = c
+            }
+        }
+        // removed vertices are colored
+        for v in removed_vertices.iter() {
+            colors[*v] = rng.gen_range(0..nb_colors);
+        }
+        // compute nb neigh colors
+        let mut nb_neigh_colors = vec![ vec![0 ; nb_colors] ; inst.nb_vertices()];
+        for i in inst.vertices() {
+            for j in inst.neighbors(i) {
+                nb_neigh_colors[j][colors[i]] += 1;
+            }
+        }
+        // compute conflicting edges
+        let mut conflicting_edges = vec![BitSet::with_capacity(n) ; n];
+        for u in removed_vertices.iter() {
+            for v in inst.neighbors(*u) {
+                if colors[*u] == colors[v] {
+                    conflicting_edges[v].insert(*u);
+                    conflicting_edges[*u].insert(v);
+                }
+            }
+        }
+        Self {
+            inst,
+            colors,
+            nb_colors,
+            nb_neigh_colors,
+            conflicting_edges,
+        }
+    }
+
     /**
     Creates a new search state with a random solution using nb_colors
     */
     pub fn random_solution(inst:Rc<dyn ColoringInstance>, nb_colors:usize) -> Self {
+        let n = inst.nb_vertices();
         let mut rng = rand::thread_rng();
         let mut colors:Vec<usize> = Vec::with_capacity(inst.nb_vertices());
         let mut nb_neigh_colors = vec![ vec![0 ; nb_colors] ; inst.nb_vertices()];
@@ -150,11 +199,21 @@ impl SearchState {
                 nb_neigh_colors[j][c] += 1;
             }
         }
+        let mut conflicting_edges = vec![BitSet::with_capacity(n) ; n];
+        for i in inst.vertices() {
+            for j in inst.neighbors(i) {
+                if i < j && colors[i] == colors[j] {
+                    conflicting_edges[i].insert(j);
+                    conflicting_edges[j].insert(i);
+                }
+            }
+        }
         Self {
             inst,
             colors,
             nb_colors,
             nb_neigh_colors,
+            conflicting_edges,
         }
     }
 
@@ -174,20 +233,27 @@ impl SearchState {
         }
         // update colors
         self.colors[decision.v] = decision.c;
+        // update conflicting edges
+        for u in self.inst.neighbors(decision.v) {
+            if self.colors[u] == previous_color { // remove conflict
+                self.conflicting_edges[u].remove(decision.v);
+                self.conflicting_edges[decision.v].remove(u);
+            }
+            if self.colors[u] == decision.c { // add conflict
+                self.conflicting_edges[u].insert(decision.v);
+                self.conflicting_edges[decision.v].insert(u);
+            }
+        }
     }
 
-    /** returns the list of conflicting edges */
-    fn conflicting_edges(&self) -> Vec<(VertexId,VertexId)> {
-        self.inst.edges().iter()
-            .filter(|(u,v)| self.colors[*u] == self.colors[*v])
-            .cloned().collect()
+    fn nb_conflicting_edges(&self) -> i64 {
+        self.conflicting_edges.iter().map(|e| e.len() as i64).sum()
     }
-
 }
 
 
-impl GuidedSpace<Node, usize> for SearchState {
-    fn guide(&mut self, node: &Node) -> usize {
+impl GuidedSpace<Node, i64> for SearchState {
+    fn guide(&mut self, node: &Node) -> i64 {
         node.nb_conflicts
     }
 }
@@ -214,10 +280,13 @@ impl ToSolution<Node, Solution> for SearchState {
 
 impl SearchSpace<Node, i32> for SearchState {
     fn initial(&mut self) -> Node {
-        Node { decision: None, nb_conflicts: self.conflicting_edges().len() }
+        Node {
+            decision: None,
+            nb_conflicts: self.nb_conflicting_edges()
+        }
     }
     fn bound(&mut self, _node: &Node) -> i32 { 0 }
-    fn goal(&mut self, node: &Node) -> bool { node.nb_conflicts == 0 }
+    fn goal(&mut self, n: &Node) -> bool { n.nb_conflicts == 0 }
     fn g_cost(&mut self, _n: &Node) -> i32 { 0 }
 }
 
@@ -230,34 +299,37 @@ impl DecisionSpace<Node, Decision> for SearchState {
 
 impl TotalNeighborGeneration<Node> for SearchState {
     fn neighbors(&mut self, node: &mut Node) -> Vec<Node> {
-        // println!("{}", node.nb_conflicts);
         // apply decision within the node
         match &node.decision {
             None => {},
             Some(d) => self.commit(d)
         };
         // for each conflicting edge, mark endpoints as to visit
-        let mut vertices_to_change = Vec::new();
-        let mut vertices_to_change_bitset:BitSet<u64> = BitSet::default();
-        let conflicting_edges = self.conflicting_edges();
-        let nb_conflicts = conflicting_edges.len();
-        for (u,v) in conflicting_edges {
-            if !vertices_to_change_bitset.contains(u) {
-                vertices_to_change_bitset.insert(u);
-                vertices_to_change.push(u);
-            }
-            if !vertices_to_change_bitset.contains(v) {
-                vertices_to_change_bitset.insert(v);
-                vertices_to_change.push(v);
+        let mut vertices_to_change:BitSet<u64> = BitSet::default();
+        let nb_conflicts = self.nb_conflicting_edges();
+        if nb_conflicts == 0 {
+            return vec![Node { decision:None, nb_conflicts:0 }];
+        }
+        // println!("{:?}", nb_conflicts);
+        for u in self.inst.vertices() {
+            for v in self.conflicting_edges[u].iter() {
+                if u < v { // for each conflicting edge (u,v), allows changing u and v
+                    if !vertices_to_change.contains(u) {
+                        vertices_to_change.insert(u);
+                    }
+                    if !vertices_to_change.contains(v) {
+                        vertices_to_change.insert(v);
+                    }
+                }
             }
         }
         // for each vertex to try changing and other color (all but the original one)
         let mut res = Vec::new();
-        for v in vertices_to_change {
+        for v in vertices_to_change.iter() {
             for c in 0..self.nb_colors {
                 if self.colors[v] != c {
-                    let new_nb_conflicts = nb_conflicts + 
-                        self.nb_neigh_colors[v][c] - self.nb_neigh_colors[v][self.colors[v]];
+                    let new_nb_conflicts:i64 = nb_conflicts + 
+                        self.nb_neigh_colors[v][c] as i64 - self.nb_neigh_colors[v][self.colors[v]] as i64;
                     res.push(Node { decision: Some(Decision {v, c}), nb_conflicts: new_nb_conflicts })
                 }
             }
@@ -275,17 +347,17 @@ pub fn tabucol<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringInstance>, nb_ini
     let mut nb_colors = nb_initial_colors;
     while !stopping_criterion.is_finished() {
         let search_state = Rc::new(RefCell::new(
-            StatTsCombinator::new(
+            // StatTsCombinator::new(
                 TabuCombinator::new(
                     SearchState::random_solution(inst.clone(), nb_colors),
                 TabuColTenure::new(10, 0.6, inst.nb_vertices(), nb_colors)
                 )
-            )
+            // )
         ));
         let mut ts = Greedy::new(search_state.clone());
         ts.run(stopping_criterion.clone());
         // check that the last solution is valid
-        search_state.borrow_mut().display_statistics();
+        // search_state.borrow_mut().display_statistics();
         match ts.get_manager().best() {
             None => {
                 println!("\tfailed improving the solution (finding {} colors)...", nb_colors);
@@ -311,12 +383,62 @@ pub fn tabucol<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringInstance>, nb_ini
 }
 
 
+/**
+Runs a tabucol algorithm. Given an instance and an initial number of colors, run the search algorithm until the stopping criterion is reached.
+Optionnaly, a filename is given to export the solution
+*/
+pub fn tabucol_with_solution<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringInstance>, sol:&[Vec<VertexId>], stopping_criterion:Stopping, solution_filename:Option<String>) {
+    let mut solution:Vec<Vec<VertexId>> = sol.to_vec();
+    let mut nb_colors = solution.len();
+    while !stopping_criterion.is_finished() {
+        let search_state = Rc::new(RefCell::new(
+            // StatTsCombinator::new(
+                TabuCombinator::new(
+                    SearchState::from_solution(inst.clone(), &solution),
+                TabuColTenure::new(inst.nb_vertices()/2, 0.2, inst.nb_vertices(), nb_colors-1)
+                // FullTabuTenure::default()
+                )
+            // )
+        ));
+        let mut ts = Greedy::new(search_state.clone());
+        ts.run(stopping_criterion.clone());
+        // check that the last solution is valid
+        // search_state.borrow_mut().display_statistics();
+        match ts.get_manager().best() {
+            None => {
+                println!("\tfailed improving the solution (finding {} colors)...", nb_colors-1);
+                break;
+            }
+            Some(node) => {
+                if node.nb_conflicts == 0 {
+                    println!("\t{} colors found!", nb_colors-1);
+                    let mut node_clone = node.clone();
+                    solution = search_state.borrow_mut().solution(&mut node_clone);
+                    // print output file if asked
+                    match &solution_filename {
+                        None => {},
+                        Some(filename) => {
+                            inst.write_solution(filename, &solution);
+                        }
+                    }
+                    nb_colors -= 1;
+                    assert_eq!(nb_colors, solution.len());
+                }
+            }
+        }
+    }
+}
+
+
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
     
+    use crate::cgshop::CGSHOPInstance;
     use crate::dimacs::DimacsInstance;
+    use crate::search::greedy_dsatur::greedy_dsatur;
 
     use std::cell::RefCell;
 
@@ -366,7 +488,7 @@ mod tests {
                 TabuCombinator::new(
                     SearchState::random_solution(inst.clone(), nb_initial_colors),
                     // FullTabuTenure::default()
-                    TabuColTenure::new(60, 0.6, inst.nb_vertices(), nb_initial_colors)
+                    TabuColTenure::new(inst.nb_vertices()*10, 0.6, inst.nb_vertices(), nb_initial_colors)
                 )
                 
             ).bind_logger(Rc::downgrade(&logger))
@@ -381,15 +503,80 @@ mod tests {
     fn test_metaheuristic() {
         let inst = Rc::new(DimacsInstance::from_file("insts/instances-dimacs1/le450_15a.col"));
         let nb_initial_colors:usize = 20;
-        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3.);
+        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(30.);
         tabucol(inst, nb_initial_colors, stopping_criterion, None);
     }
 
     #[test]
-    fn test_metaheuristic_flat1000() {
+    fn test_tabu_with_solution_le450_15a() {
+        let inst = Rc::new(DimacsInstance::from_file("insts/instances-dimacs1/le450_15a.col"));
+        let greedy_sol = greedy_dsatur(inst.clone(), false);
+        println!("initial solution: {}", greedy_sol.len());
+        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(50.);
+        tabucol_with_solution(inst, &greedy_sol, stopping_criterion, None);
+    }
+
+    #[test]
+    fn test_tabu_with_solution_flat1000() {
         let inst = Rc::new(DimacsInstance::from_file("insts/instances-dimacs1/flat1000_76_0.col"));
-        let nb_initial_colors:usize = 112;
-        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(5.);
-        tabucol(inst, nb_initial_colors, stopping_criterion, None);
+        let greedy_sol = greedy_dsatur(inst.clone(), false);
+        println!("initial solution: {}", greedy_sol.len());
+        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(50.);
+        tabucol_with_solution(inst, &greedy_sol, stopping_criterion, None);
+    }
+
+    #[test]
+    fn test_tabu_with_greedy_cgshop() {
+        let inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/cgshop22/rvispecn13421.instance.json"
+        ));
+        let greedy_sol = greedy_dsatur(inst.clone(), false);
+        println!("initial solution: {}", greedy_sol.len());
+        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3000.);
+        tabucol_with_solution(inst, &greedy_sol, stopping_criterion, None);
+    }
+
+    #[test]
+    fn test_tabu_with_greedy_cgshop2() {
+        let inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/cgshop22/vispecn2518.instance.json"
+        ));
+        let greedy_sol = greedy_dsatur(inst.clone(), false);
+        println!("initial solution: {}", greedy_sol.len());
+        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3000.);
+        tabucol_with_solution(inst, &greedy_sol, stopping_criterion, None);
+    }
+
+    #[test]
+    fn test_tabu_with_greedy_cgshop3() {
+        let inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/cgshop_22_examples/sqrm_10K_1.instance.json"
+        ));
+        let greedy_sol = greedy_dsatur(inst.clone(), false);
+        println!("initial solution: {}", greedy_sol.len());
+        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3000.);
+        tabucol_with_solution(inst, &greedy_sol, stopping_criterion, None);
+    }
+
+    #[test]
+    fn test_tabu_with_greedy_cgshop4() {
+        let inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/cgshop_22_examples/sqrm_10K_6.instance.json"
+        ));
+        let greedy_sol = greedy_dsatur(inst.clone(), false);
+        println!("initial solution: {}", greedy_sol.len());
+        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3000.);
+        tabucol_with_solution(inst, &greedy_sol, stopping_criterion, None);
+    }
+
+    #[test]
+    fn test_tabu_with_greedy_cgshop5() {
+        let inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/cgshop_22_examples/visp_10K.instance.json"
+        ));
+        let greedy_sol = greedy_dsatur(inst.clone(), false);
+        println!("initial solution: {}", greedy_sol.len());
+        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3000.);
+        tabucol_with_solution(inst, &greedy_sol, stopping_criterion, None);
     }
 }
