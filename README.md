@@ -5,11 +5,11 @@ Discrete Optimization Global Search for the Graph Coloring problem
 # Features
 
 - [X] DIMACS format reading
-- [X] SOCG22 instance & solution format reading & writing
+- [X] SOCG22 competition instance & solution format reading & writing
 - [X] custom DSATUR algorithm (less memory requirement)
 
 
-# Preprocessing
+# Preprocessings
 
 - [X] Dominated vertices: $u$ dominates $v$ if $N(v) \subseteq N(u)$. In this case, $v$ can be safely removed and
       colored using the same color as $u$.

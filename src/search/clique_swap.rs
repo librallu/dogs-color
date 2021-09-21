@@ -95,6 +95,7 @@ pub fn clique_swaps(inst:Rc<dyn ColoringInstance>, sol:Vec<VertexId>, nb_max_ite
             // .filter(|u| !inside_clique.contains(*u) && !tabu.contains(&0, u))
             // only consider non added vertices and non-tabu (with a simple aspiration criterion)
             .filter(|u| !inside_clique.contains(*u) && (nb_clique_see[*u] as usize == current_clique.len() || !tabu.contains(&0, u)))
+            .filter(|u| !inst.is_dominated(*u) && inst.degree(*u) > best.len()) // do not take dominated vertices
             .max_by(|u,v| nb_clique_see[*u].cmp(&nb_clique_see[*v])
                 .then_with(|| inst.degree(*u).cmp(&inst.degree(*v)))
             ){
@@ -150,19 +151,15 @@ mod tests {
     #[test]
     fn test_run() {
         let inst = Rc::new(CGSHOPInstance::from_file(
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_5K_1.instance.json"
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_4.instance.json"
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_1.instance.json"
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_10K_6.instance.json"
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_6.instance.json"
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_50K_4.instance.json"
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_100K_6.instance.json"
-            "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example-instances-sqrm/sqrm_500K_6.instance.json"
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_5K.instance.json"
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_10K.instance.json"
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_50K.instance.json"
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_100K.instance.json"
-            // "./insts/CGSHOP_22_original/cgshop_2022_examples_01/example_instances_visp/visp_1M.instance.json"
+            // "./insts/cgshop22/reecn3382.instance.json"
+            // "./insts/cgshop22/reecn15355.instance.json"
+            // "./insts/cgshop22/vispecn19370.instance.json"
+            "./insts/cgshop22/rvispecn13421.instance.json"
+            // "./insts/cgshop22/visp26405.instance.json"
+            // "./insts/cgshop22/sqrp15532.instance.json"
+            // "./insts/cgshop22/rvisp24116.instance.json"
+            // "./insts/cgshop22/rsqrp24641.instance.json"
+            // "./insts/cgshop22/rsqrp23406.instance.json"
             // "./insts/cgshop_22_examples/tiny10.instance.json"
         ));
         let sol = greedy_clique(inst.clone());

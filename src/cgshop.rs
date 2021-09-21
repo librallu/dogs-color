@@ -49,6 +49,9 @@ pub struct CGSHOPInstance {
     /// integer coordinates
     #[serde(skip)]
     coordinates: Vec<((i64,i64),(i64,i64))>,
+    /// bitset of dominated vertices
+    #[serde(skip)]
+    dominated:BitSet,
     /// pre-processed data
     preprocessed: Option<PreprocessedData>,
 }
@@ -65,10 +68,6 @@ impl ColoringInstance for CGSHOPInstance {
     }
 
     fn are_adjacent(&self, u:VertexId, v:VertexId) -> bool {
-        // are_intersecting(
-        //     &self.coordinates[u],
-        //     &self.coordinates[v]
-        // )
         self.neighbors[u].contains(v)
     }
 
@@ -84,6 +83,9 @@ impl ColoringInstance for CGSHOPInstance {
     }
 
     fn edges(&self) -> &[(VertexId, VertexId)] { todo!() }
+
+    fn is_dominated(&self, v:VertexId) -> bool { self.dominated.contains(v) }
+
 }
 
 
@@ -131,6 +133,7 @@ impl CGSHOPInstance {
                         Some(j) => { // if a vertex v dominates i
                             dominations.push((j,i));
                             not_dominated.remove(i);
+                            res.dominated.insert(i);
                         }
                     };
                 }
