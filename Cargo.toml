@@ -48,6 +48,10 @@ path = "src/bin/tabucol.rs"
 name = "cgshop_checker"
 path = "src/bin/cgshop_checker.rs"
 
+[[bin]]
+name = "clique_tabu_swap"
+path = "src/bin/clique_tabu_swap.rs"
+
 
 # build for CBC
 [build]

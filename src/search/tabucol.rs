@@ -5,7 +5,7 @@ use rand::Rng;
 use bit_set::BitSet;
 
 use dogs::search_algorithm::{SearchAlgorithm, StoppingCriterion};
-use dogs::combinators::helper::tabu_tenure::{FullTabuTenure, TabuTenure};
+use dogs::combinators::helper::tabu_tenure::TabuTenure;
 use dogs::search_space::{
     SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution, DecisionSpace
 };
@@ -343,50 +343,6 @@ impl TotalNeighborGeneration<Node> for SearchState {
 Runs a tabucol algorithm. Given an instance and an initial number of colors, run the search algorithm until the stopping criterion is reached.
 Optionnaly, a filename is given to export the solution
 */
-pub fn tabucol<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringInstance>, nb_initial_colors:usize, stopping_criterion:Stopping, solution_filename:Option<String>) {
-    let mut nb_colors = nb_initial_colors;
-    while !stopping_criterion.is_finished() {
-        let search_state = Rc::new(RefCell::new(
-            // StatTsCombinator::new(
-                TabuCombinator::new(
-                    SearchState::random_solution(inst.clone(), nb_colors),
-                TabuColTenure::new(10, 0.6, inst.nb_vertices(), nb_colors)
-                )
-            // )
-        ));
-        let mut ts = Greedy::new(search_state.clone());
-        ts.run(stopping_criterion.clone());
-        // check that the last solution is valid
-        // search_state.borrow_mut().display_statistics();
-        match ts.get_manager().best() {
-            None => {
-                println!("\tfailed improving the solution (finding {} colors)...", nb_colors);
-                break;
-            }
-            Some(node) => {
-                if node.nb_conflicts == 0 {
-                    println!("\t{} colors found!", nb_colors);
-                    // print output file if asked
-                    match &solution_filename {
-                        None => {},
-                        Some(filename) => {
-                            let mut node_clone = node.clone();
-                            let solution = search_state.borrow_mut().solution(&mut node_clone);
-                            inst.write_solution(filename, &solution);
-                        }
-                    }
-                    nb_colors -= 1;
-                }
-            }
-        }
-    }
-}
-
-
-/**
-Runs a tabucol algorithm. Given an instance and an initial number of colors, run the search algorithm until the stopping criterion is reached.
-Optionnaly, a filename is given to export the solution
-*/
 pub fn tabucol_with_solution<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringInstance>, sol:&[Vec<VertexId>], stopping_criterion:Stopping, solution_filename:Option<String>) {
     let mut solution:Vec<Vec<VertexId>> = sol.to_vec();
     let mut nb_colors = solution.len();
@@ -497,14 +453,6 @@ mod tests {
         let mut ts = Greedy::new(search_state.clone());
         ts.run(stopping_criterion);
         search_state.borrow_mut().display_statistics();
-    }
-
-    #[test]
-    fn test_metaheuristic() {
-        let inst = Rc::new(DimacsInstance::from_file("insts/instances-dimacs1/le450_15a.col"));
-        let nb_initial_colors:usize = 20;
-        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(30.);
-        tabucol(inst, nb_initial_colors, stopping_criterion, None);
     }
 
     #[test]

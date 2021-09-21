@@ -1,7 +1,7 @@
 use clap::{App, load_yaml};
 use dogs::search_algorithm::TimeStoppingCriterion;
 
-use dogs_color::search::tabucol::tabucol;
+use dogs_color::search::tabucol::tabucol_with_solution;
 use dogs_color::search::greedy_dsatur::greedy_dsatur;
 use dogs_color::util::{read_params, export_results};
 
@@ -22,9 +22,9 @@ pub fn main() {
     // solve it
     let sol_greedy = greedy_dsatur(instance.clone(), true);
     println!("greedy found {} colors", sol_greedy.len());
-    tabucol(
+    tabucol_with_solution(
         instance.clone(),
-        sol_greedy.len(),
+        &sol_greedy,
         TimeStoppingCriterion::new(t),
         None
     );
