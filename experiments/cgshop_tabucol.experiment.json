@@ -1,0 +1,22 @@
+{
+    "experiment_name":   "cgshop_tabucol",
+    "nb_parallel_tasks": 5,
+    "fallback_threads": 5,
+    "instance_list":     "../insts/cgshop22.csv",
+    "output_prefix":     ".",
+    "solvers": [
+        {
+            "name": "tabucol",
+            "exe_path": "../target/release/tabucol",
+            "params": [
+                {"name":"instance", "values":["#{instance_path}"]},
+                {"name":"time",     "values":["#{time_limit}"]},
+                {"name":"perf",     "values":["#{file_prefix}.stats.json"]},
+                {"name":"solution", "values":["#{file_prefix}.sol"]},
+                {"name":"type",     "values":["cgshop"]}
+            ]
+        }
+    ],
+    "analysis": {
+    }
+}

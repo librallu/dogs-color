@@ -343,7 +343,7 @@ impl TotalNeighborGeneration<Node> for SearchState {
 Runs a tabucol algorithm. Given an instance and an initial number of colors, run the search algorithm until the stopping criterion is reached.
 Optionnaly, a filename is given to export the solution
 */
-pub fn tabucol_with_solution<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringInstance>, sol:&[Vec<VertexId>], stopping_criterion:Stopping, solution_filename:Option<String>) {
+pub fn tabucol_with_solution<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringInstance>, sol:&[Vec<VertexId>], stopping_criterion:Stopping, solution_filename:Option<String>) -> Vec<Vec<VertexId>> {
     let mut solution:Vec<Vec<VertexId>> = sol.to_vec();
     let mut nb_colors = solution.len();
     while !stopping_criterion.is_finished() {
@@ -367,9 +367,11 @@ pub fn tabucol_with_solution<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringIns
             }
             Some(node) => {
                 if node.nb_conflicts == 0 {
-                    println!("\t{} colors found!", nb_colors-1);
+                    nb_colors -= 1;
+                    println!("\t{} colors found!", nb_colors);
                     let mut node_clone = node.clone();
                     solution = search_state.borrow_mut().solution(&mut node_clone);
+                    assert_eq!(nb_colors, solution.len());
                     // print output file if asked
                     match &solution_filename {
                         None => {},
@@ -377,12 +379,11 @@ pub fn tabucol_with_solution<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringIns
                             inst.write_solution(filename, &solution);
                         }
                     }
-                    nb_colors -= 1;
-                    assert_eq!(nb_colors, solution.len());
                 }
             }
         }
     }
+    solution
 }
 
 
