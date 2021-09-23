@@ -3,7 +3,6 @@ use std::cell::RefCell;
 
 use dogs::combinators::stats::StatTsCombinator;
 use dogs::metric_logger::MetricLogger;
-use ordered_float::OrderedFloat;
 use rand::Rng;
 use bit_set::BitSet;
 
@@ -254,9 +253,9 @@ impl SearchState {
 }
 
 
-impl GuidedSpace<Node, OrderedFloat<f64>> for SearchState {
-    fn guide(&mut self, node: &Node) -> OrderedFloat<f64> {
-        OrderedFloat(node.nb_conflicts as f64 + self.rng.gen::<f64>()/2.)
+impl GuidedSpace<Node, i64> for SearchState {
+    fn guide(&mut self, node: &Node) -> i64 {
+        node.nb_conflicts
     }
 }
 
@@ -350,7 +349,8 @@ pub fn tabucol_with_solution<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringIns
         StatTsCombinator::new(
             TabuCombinator::new(
                 SearchState::from_solution(inst.clone(), &solution),
-            TabuColTenure::new(10, 0.6, inst.nb_vertices(), nb_colors)
+            TabuColTenure::new(10, 0.6
+                , inst.nb_vertices(), nb_colors)
             // FullTabuTenure::default()
             )
         ).bind_logger(Rc::downgrade(&logger)),
@@ -416,7 +416,18 @@ mod tests {
     #[test]
     fn test_tabu_with_greedy_cgshop() {
         let inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/cgshop22/rvispecn13421.instance.json"
+            "./insts/cgshop22/reecn3382.instance.json"
+        ));
+        let greedy_sol = greedy_dsatur(inst.clone(), false);
+        println!("initial solution: {}", greedy_sol.len());
+        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3000.);
+        tabucol_with_solution(inst, &greedy_sol, stopping_criterion, None);
+    }
+
+    #[test]
+    fn test_tabu_with_greedy_cgshop_bis() {
+        let inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/cgshop22/reecn3382.instance.json"
         ));
         let greedy_sol = greedy_dsatur(inst.clone(), false);
         println!("initial solution: {}", greedy_sol.len());
