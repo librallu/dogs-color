@@ -3,7 +3,7 @@ use std::cell::RefCell;
 
 use dogs::combinators::stats::StatTsCombinator;
 use dogs::metric_logger::MetricLogger;
-use rand::Rng;
+use fastrand::Rng;
 use bit_set::BitSet;
 
 use dogs::search_algorithm::{SearchAlgorithm, StoppingCriterion};
@@ -13,7 +13,6 @@ use dogs::search_space::{
 };
 use dogs::combinators::tabu::TabuCombinator;
 use dogs::tree_search::greedy::Greedy;
-use rand::prelude::ThreadRng;
 
 use crate::color::{ColoringInstance, Solution, VertexId, checker, CheckerResult};
 
@@ -70,7 +69,7 @@ pub struct TabuColTenure {
     /// decisions[v][c]: last iteration in which the decision have been taken
     decisions: Vec<Vec<Option<i64>>>,
     /// random number generator
-    rng: ThreadRng,
+    rng: Rng,
 }
 
 impl TabuTenure<Node, Decision> for TabuColTenure {
@@ -83,7 +82,7 @@ impl TabuTenure<Node, Decision> for TabuColTenure {
         match self.decisions[d.v][d.c_next] {
             None => false,
             Some(i) => {
-                let rand_l:i64 = self.rng.gen_range(0..self.l) as i64;
+                let rand_l:i64 = self.rng.i64(0..self.l as i64);
                 let threshold = rand_l + (self.lambda * (n.nb_conflicts as f64)) as i64;
                 i >= self.nb_iter - threshold
             }
@@ -103,7 +102,7 @@ impl TabuColTenure {
             l, lambda,
             nb_iter: 0,
             decisions: vec![vec![None ; c] ; n],
-            rng: rand::thread_rng(),
+            rng: Rng::new(),
         }
     }
 }
@@ -140,7 +139,7 @@ pub struct SearchState {
     /// last valid solution seen
     last_solution: Vec<Vec<VertexId>>,
     /// random number generator
-    rng:ThreadRng,
+    rng:Rng,
 }
 
 
@@ -163,7 +162,7 @@ impl SearchState {
         }
         // removed vertices are colored
         for v in removed_vertices.iter() {
-            colors[*v] = self.rng.gen_range(0..nb_colors);
+            colors[*v] = self.rng.usize(0..nb_colors);
         }
         // compute nb neigh colors
         let mut nb_neigh_colors = vec![ vec![0 ; nb_colors] ; self.inst.nb_vertices()];
@@ -205,7 +204,7 @@ impl SearchState {
             conflicting_edges: Vec::new(),
             nb_conflicting_edges: 0,
             last_solution: sol.to_vec(),
-            rng: rand::thread_rng()
+            rng: Rng::new(),
         };
         res.remove_color();
         res
