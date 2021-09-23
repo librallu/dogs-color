@@ -3,6 +3,7 @@ use std::cell::RefCell;
 
 use dogs::combinators::stats::StatTsCombinator;
 use dogs::metric_logger::MetricLogger;
+use ordered_float::OrderedFloat;
 use rand::Rng;
 use bit_set::BitSet;
 
@@ -25,8 +26,10 @@ Decision of changing the color of vertex v by c
 pub struct Decision {
     /// vertex to color
     pub v: VertexId,
+    /// previously used color for v
+    pub c_prev: usize,
     /// color to use
-    pub c: usize,
+    pub c_next: usize,
 }
 
 impl Default for Decision {
@@ -73,12 +76,14 @@ pub struct TabuColTenure {
 
 impl TabuTenure<Node, Decision> for TabuColTenure {
     fn insert(&mut self, _n:&Node, d:Decision) {
-        self.decisions[d.v][d.c] = Some(self.nb_iter);
+        self.decisions[d.v][d.c_prev] = Some(self.nb_iter);
         self.nb_iter += 1;
     }
 
     fn contains(&mut self, n:&Node, d:&Decision) -> bool {
-        match self.decisions[d.v][d.c] {
+        // aspiration criterion
+        if n.nb_conflicts == 0 { return true; }
+        match self.decisions[d.v][d.c_next] {
             None => false,
             Some(i) => {
                 let rand_l = self.rng.gen_range(0..self.l);
@@ -133,6 +138,10 @@ pub struct SearchState {
     nb_neigh_colors: Vec<Vec<usize>>,
     /// conflicting_edges[i].contains(j) -> the edges (i,j) are conflicting 
     conflicting_edges: Vec<BitSet>,
+    /// last valid solution seen
+    last_solution: Vec<Vec<VertexId>>,
+    /// random number generator
+    rng:ThreadRng,
 }
 
 
@@ -140,22 +149,8 @@ impl SearchState {
 
     /** removes a color from the current solution (should be feasible). */
     fn remove_color(&mut self) {
-        assert_eq!(self.nb_conflicting_edges(), 0);
-        let sol = self.solution(&mut Node {nb_conflicts: 0, decision:None});
-        assert_eq!(checker(self.inst.clone(), &sol), CheckerResult::Ok(sol.len()));
-        let self2 = Self::from_solution(self.inst.clone(), &sol);
-        self.colors = self2.colors;
-        self.nb_colors = self2.nb_colors;
-        self.nb_neigh_colors = self2.nb_neigh_colors;
-        self.conflicting_edges = self2.conflicting_edges; 
-    }
-
-    /** Creates a new search state, starting by a feasible solution, removing the color
-    with the less vertices.
-    */
-    pub fn from_solution(inst:Rc<dyn ColoringInstance>, sol:&[Vec<VertexId>]) -> Self {
-        let n = inst.nb_vertices();
-        let mut rng = rand::thread_rng();
+        let n = self.inst.nb_vertices();
+        let sol = self.last_solution.clone();
         let (mini_color_index,_) = sol.iter().enumerate().min_by_key(|(_,e)| e.len()).unwrap();
         let mut new_sol:Vec<Vec<VertexId>> = sol.to_vec();
         let removed_vertices = new_sol.remove(mini_color_index);
@@ -169,32 +164,47 @@ impl SearchState {
         }
         // removed vertices are colored
         for v in removed_vertices.iter() {
-            colors[*v] = rng.gen_range(0..nb_colors);
+            colors[*v] = self.rng.gen_range(0..nb_colors);
         }
         // compute nb neigh colors
-        let mut nb_neigh_colors = vec![ vec![0 ; nb_colors] ; inst.nb_vertices()];
-        for i in inst.vertices() {
-            for j in inst.neighbors(i) {
+        let mut nb_neigh_colors = vec![ vec![0 ; nb_colors] ; self.inst.nb_vertices()];
+        for i in self.inst.vertices() {
+            for j in self.inst.neighbors(i) {
                 nb_neigh_colors[j][colors[i]] += 1;
             }
         }
         // compute conflicting edges
         let mut conflicting_edges = vec![BitSet::with_capacity(n) ; n];
         for u in removed_vertices.iter() {
-            for v in inst.neighbors(*u) {
+            for v in self.inst.neighbors(*u) {
                 if colors[*u] == colors[v] {
                     conflicting_edges[v].insert(*u);
                     conflicting_edges[*u].insert(v);
                 }
             }
         }
-        Self {
+        // define attributes
+        self.colors = colors;
+        self.nb_colors = nb_colors;
+        self.nb_neigh_colors = nb_neigh_colors;
+        self.conflicting_edges = conflicting_edges;
+    }
+
+    /** Creates a new search state, starting by a feasible solution, removing the color
+    with the less vertices.
+    */
+    pub fn from_solution(inst:Rc<dyn ColoringInstance>, sol:&[Vec<VertexId>]) -> Self {
+        let mut res = Self {
             inst,
-            colors,
-            nb_colors,
-            nb_neigh_colors,
-            conflicting_edges,
-        }
+            colors: Vec::new(),
+            nb_colors: sol.len()-1,
+            nb_neigh_colors: Vec::new(),
+            conflicting_edges: Vec::new(),
+            last_solution: sol.to_vec(),
+            rng: rand::thread_rng()
+        };
+        res.remove_color();
+        res
     }
 
     /** applies a decision to the search state */
@@ -204,27 +214,38 @@ impl SearchState {
 
     /** just applies the decision (either called from restore or commit) */
     fn apply_decision(&mut self, decision:&Decision) {
-        assert!(decision.c < self.nb_colors);
+        assert!(decision.c_next < self.nb_colors);
         // update nb_neigh_color
         let previous_color = self.colors[decision.v];
         for neigh in self.inst.neighbors(decision.v) {
             debug_assert!(self.nb_neigh_colors[neigh][previous_color] > 0);
             self.nb_neigh_colors[neigh][previous_color] -= 1;
-            self.nb_neigh_colors[neigh][decision.c] += 1;
+            self.nb_neigh_colors[neigh][decision.c_next] += 1;
         }
         // update colors
-        self.colors[decision.v] = decision.c;
+        self.colors[decision.v] = decision.c_next;
         // update conflicting edges
         for u in self.inst.neighbors(decision.v) {
             if self.colors[u] == previous_color { // remove conflict
                 self.conflicting_edges[u].remove(decision.v);
                 self.conflicting_edges[decision.v].remove(u);
             }
-            if self.colors[u] == decision.c { // add conflict
+            if self.colors[u] == decision.c_next { // add conflict
                 self.conflicting_edges[u].insert(decision.v);
                 self.conflicting_edges[decision.v].insert(u);
             }
         }
+    }
+
+    fn build_solution(&self) -> Solution {
+        let mut sol:Solution = vec![vec![]; self.nb_colors];
+        for (i,v) in self.colors.iter().enumerate() {
+            sol[*v].push(i);
+        }
+        let res:Solution = sol.iter().filter(|e| !e.is_empty())
+            .cloned().collect();
+        assert_eq!(checker(self.inst.clone(), &res), CheckerResult::Ok(res.len()));
+        res
     }
 
     fn nb_conflicting_edges(&self) -> i64 {
@@ -233,27 +254,15 @@ impl SearchState {
 }
 
 
-impl GuidedSpace<Node, i64> for SearchState {
-    fn guide(&mut self, node: &Node) -> i64 {
-        node.nb_conflicts
+impl GuidedSpace<Node, OrderedFloat<f64>> for SearchState {
+    fn guide(&mut self, node: &Node) -> OrderedFloat<f64> {
+        OrderedFloat(node.nb_conflicts as f64 + self.rng.gen::<f64>()/2.)
     }
 }
 
 impl ToSolution<Node, Solution> for SearchState {
-    fn solution(&mut self, node: &mut Node) -> Solution {
-        assert_eq!(node.nb_conflicts, 0); // check if valid
-        // apply node decision
-        // match &node.decision {
-        //     None => {},
-        //     Some(d) => { self.apply_decision(d); }
-        // }
-        // compute solution
-        let mut sol:Solution = vec![vec![]; self.nb_colors];
-        for (i,v) in self.colors.iter().enumerate() {
-            sol[*v].push(i);
-        }
-        let res:Solution = sol.iter().filter(|e| !e.is_empty())
-            .cloned().collect();
+    fn solution(&mut self, _: &mut Node) -> Solution {
+        let res = self.last_solution.clone();
         assert_eq!(checker(self.inst.clone(), &res), CheckerResult::Ok(res.len()));
         res
     }
@@ -284,6 +293,7 @@ impl TotalNeighborGeneration<Node> for SearchState {
         match &node.decision {
             None => {
                 if node.nb_conflicts == 0 {
+                    self.last_solution = self.build_solution();
                     // println!("removing one color (nb_conflicts:{})", node.nb_conflicts);
                     self.remove_color();
                 }
@@ -316,7 +326,10 @@ impl TotalNeighborGeneration<Node> for SearchState {
                 if self.colors[v] != c {
                     let new_nb_conflicts:i64 = nb_conflicts + 
                         self.nb_neigh_colors[v][c] as i64 - self.nb_neigh_colors[v][self.colors[v]] as i64;
-                    res.push(Node { decision: Some(Decision {v, c}), nb_conflicts: new_nb_conflicts })
+                    res.push(Node {
+                        decision: Some(Decision {v, c_prev: self.colors[v], c_next: c}),
+                        nb_conflicts: new_nb_conflicts 
+                    })
                 }
             }
         }
@@ -333,44 +346,39 @@ pub fn tabucol_with_solution<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringIns
     let mut solution:Vec<Vec<VertexId>> = sol.to_vec();
     let nb_colors = solution.len();
     let logger = Rc::new(MetricLogger::default());
-    // while !stopping_criterion.is_finished() {
-        let space = Rc::new(RefCell::new(
-            StatTsCombinator::new(
-                TabuCombinator::new(
-                    SearchState::from_solution(inst.clone(), &solution),
-                TabuColTenure::new(inst.nb_vertices()/2, 0.2, inst.nb_vertices(), nb_colors)
-                // FullTabuTenure::default()
-                )
-            ).bind_logger(Rc::downgrade(&logger)),
-        ));
-        let mut ts = Greedy::new(space.clone());
-        logger.display_headers();
-        ts.run(stopping_criterion);
-        // display the results afterwards
-        space.borrow_mut().display_statistics();
-        // check that the last solution is valid
-        // search_state.borrow_mut().display_statistics();
-        match ts.get_manager().best() {
-            None => {
-                println!("\ttabu search failed improving...");
-            }
-            Some(node) => {
-                if node.nb_conflicts == 0 {
-                    println!("\t{} colors found!", nb_colors);
-                    let mut node_clone = node.clone();
-                    solution = space.borrow_mut().solution(&mut node_clone);
-                    assert_eq!(nb_colors, solution.len());
-                    // print output file if asked
-                    match &solution_filename {
-                        None => {},
-                        Some(filename) => {
-                            inst.write_solution(filename, &solution);
-                        }
+    let space = Rc::new(RefCell::new(
+        StatTsCombinator::new(
+            TabuCombinator::new(
+                SearchState::from_solution(inst.clone(), &solution),
+            TabuColTenure::new(10, 0.6, inst.nb_vertices(), nb_colors)
+            // FullTabuTenure::default()
+            )
+        ).bind_logger(Rc::downgrade(&logger)),
+    ));
+    let mut ts = Greedy::new(space.clone());
+    logger.display_headers();
+    ts.run(stopping_criterion);
+    // display the results afterwards
+    space.borrow_mut().display_statistics();
+    // check that the last solution is valid
+    match ts.get_manager().best() {
+        None => {
+            println!("\ttabu search failed improving...");
+        }
+        Some(node) => {
+            if node.nb_conflicts == 0 {
+                let mut node_clone = node.clone();
+                solution = space.borrow_mut().solution(&mut node_clone);
+                // print output file if asked
+                match &solution_filename {
+                    None => {},
+                    Some(filename) => {
+                        inst.write_solution(filename, &solution);
                     }
                 }
             }
         }
-    // }
+    }
     solution
 }
 
@@ -401,7 +409,7 @@ mod tests {
         let inst = Rc::new(DimacsInstance::from_file("insts/instances-dimacs1/flat1000_76_0.col"));
         let greedy_sol = greedy_dsatur(inst.clone(), false);
         println!("initial solution: {}", greedy_sol.len());
-        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(5.);
+        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(50.);
         tabucol_with_solution(inst, &greedy_sol, stopping_criterion, None);
     }
 
