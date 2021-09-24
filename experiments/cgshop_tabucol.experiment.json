@@ -1,6 +1,6 @@
 {
     "experiment_name":   "cgshop_tabucol",
-    "nb_parallel_tasks": 5,
+    "nb_parallel_tasks": 20,
     "fallback_threads": 5,
     "instance_list":     "../insts/cgshop22.csv",
     "output_prefix":     ".",
