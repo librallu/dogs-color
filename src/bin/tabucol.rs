@@ -20,19 +20,25 @@ pub fn main() {
         inst_filename,
         instance,
         t,
+        instance_type,
         sol_file,
         perf_file
     ) = read_params(main_args);
-    // let instance = Rc::new(CGSHOPInstance::from_file(&inst_filename));
-
     // solve it
-    let sol_greedy = greedy_dsatur(instance.clone(), true);
-    // let sol_orientation_greedy = cgshop_aog(instance.clone(), true);
-    // let sol_greedy = if sol_dsatur.len() < sol_orientation_greedy.len() {
-    //     sol_dsatur
-    // } else {
-    //     sol_orientation_greedy
-    // };
+    let sol_greedy = match instance_type.as_str() {
+        "dimacs" => { greedy_dsatur(instance.clone(), false) }
+        "cgshop" => {
+            let sol_dsatur = greedy_dsatur(instance.clone(), false);
+            let instance = Rc::new(CGSHOPInstance::from_file(&inst_filename));
+            let sol_orientation_greedy = cgshop_aog(instance, true);
+            if sol_dsatur.len() < sol_orientation_greedy.len() {
+                sol_dsatur
+            } else {
+                sol_orientation_greedy
+            }
+        },
+        _ => { panic!("unrecognized instance type {} (valid: 'dimacs', 'cgshop')", instance_type.as_str())}
+    };
     println!("greedy found {} colors", sol_greedy.len());
     let solution = tabucol_with_solution(
         instance.clone(),

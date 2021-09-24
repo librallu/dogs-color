@@ -17,7 +17,7 @@ pub fn main() {
     let (
         inst_filename,
         instance,
-        _,
+        _, _,
         sol_file,
         perf_file
     ) = read_params(main_args);

@@ -4,15 +4,14 @@ use std::cell::RefCell;
 use dogs::combinators::stats::StatTsCombinator;
 use dogs::metric_logger::MetricLogger;
 use fastrand::Rng;
-use bit_set::BitSet;
 
 use dogs::search_algorithm::{SearchAlgorithm, StoppingCriterion};
 use dogs::combinators::helper::tabu_tenure::TabuTenure;
 use dogs::search_space::{
     SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution, DecisionSpace
 };
-use dogs::combinators::tabu::TabuCombinator;
 use dogs::tree_search::greedy::Greedy;
+use dogs::data_structures::sparse_set::SparseSet;
 
 use crate::color::{ColoringInstance, Solution, VertexId, checker, CheckerResult};
 
@@ -67,26 +66,22 @@ pub struct TabuColTenure {
     /// number of iterations since the beginning of the search
     nb_iter: i64,
     /// decisions[v][c]: last iteration in which the decision have been taken
-    decisions: Vec<Vec<Option<i64>>>,
+    decisions: Vec<Vec<i64>>,
     /// random number generator
     rng: Rng,
+    /// threshold value for a given iteration
+    threshold: i64,
 }
 
 impl TabuTenure<Node, Decision> for TabuColTenure {
-    fn insert(&mut self, _n:&Node, d:Decision) {
-        self.decisions[d.v][d.c_prev] = Some(self.nb_iter);
-        self.nb_iter += 1;
+    fn insert(&mut self, n:&Node, d:Decision) {
+        self.decisions[d.v][d.c_prev] = self.nb_iter;
+        // self.nb_iter += 1;
+        self.threshold = self.rng.i64(0..self.l as i64) + (self.lambda * (n.nb_conflicts as f64)) as i64;
     }
 
-    fn contains(&mut self, n:&Node, d:&Decision) -> bool {
-        match self.decisions[d.v][d.c_next] {
-            None => false,
-            Some(i) => {
-                let rand_l:i64 = self.rng.i64(0..self.l as i64);
-                let threshold = rand_l + (self.lambda * (n.nb_conflicts as f64)) as i64;
-                i >= self.nb_iter - threshold
-            }
-        }
+    fn contains(&mut self, _n:&Node, d:&Decision) -> bool {
+        self.decisions[d.v][d.c_next] >= self.nb_iter - self.threshold
     }
 }
 
@@ -101,10 +96,14 @@ impl TabuColTenure {
         Self {
             l, lambda,
             nb_iter: 0,
-            decisions: vec![vec![None ; c] ; n],
+            decisions: vec![vec![i64::MIN ; c] ; n],
             rng: Rng::new(),
+            threshold: 0, // will be changed later
         }
     }
+
+    /// increases the number of iterations of the tabu tenure
+    pub fn increment_iter(&mut self) { self.nb_iter += 1; }
 }
 
 
@@ -132,14 +131,20 @@ pub struct SearchState {
     nb_colors: usize,
     /// nb_neigh_colors[v][c]: number of neighbors of v that are assigned color c
     nb_neigh_colors: Vec<Vec<usize>>,
-    /// conflicting_edges[i].contains(j) -> the edges (i,j) are conflicting 
-    conflicting_edges: Vec<BitSet>,
+    /// conflicting_vertices: list of vertices that have some conflict
+    conflicting_vertices: SparseSet,
+    /// for each vertex, the number of conflicts
+    vertex_nb_conflicts: Vec<i64>,
     /// number of conflicting edges
     nb_conflicting_edges: i64,
     /// last valid solution seen
     last_solution: Vec<Vec<VertexId>>,
     /// random number generator
     rng:Rng,
+    /// best so far number of conflicts
+    best_nb_conflicts: i64,
+    /// tabu tenure
+    tabu: TabuColTenure,
 }
 
 
@@ -171,40 +176,50 @@ impl SearchState {
                 nb_neigh_colors[j][colors[i]] += 1;
             }
         }
+        // compute conflicting vertices
+        let mut conflicting_vertices = SparseSet::new(n);
+        let mut vertex_nb_conflicts:Vec<i64> = vec![0 ; n];
         // compute conflicting edges
-        let mut conflicting_edges = vec![BitSet::with_capacity(n) ; n];
-        let mut nb_conflicting_edges = 0;
         for u in removed_vertices.iter() {
             for v in self.inst.neighbors(*u) {
                 if colors[*u] == colors[v] {
-                    nb_conflicting_edges += 1;
-                    conflicting_edges[v].insert(*u);
-                    conflicting_edges[*u].insert(v);
+                    vertex_nb_conflicts[*u] += 1;
+                    vertex_nb_conflicts[v] += 1;
                 }
             }
         }
+        for (v,_) in vertex_nb_conflicts.iter().enumerate().filter(|(_,e)| **e > 0) {
+            conflicting_vertices.insert(v);
+        }
+        let nb_conflicting_edges = vertex_nb_conflicts.iter().sum::<i64>() / 2;
         // define attributes
         self.colors = colors;
         self.nb_colors = nb_colors;
         self.nb_neigh_colors = nb_neigh_colors;
-        self.conflicting_edges = conflicting_edges;
+        self.conflicting_vertices = conflicting_vertices;
+        self.vertex_nb_conflicts = vertex_nb_conflicts;
         self.nb_conflicting_edges = nb_conflicting_edges;
+        self.best_nb_conflicts = nb_conflicting_edges;
     }
 
     /** Creates a new search state, starting by a feasible solution, removing the color
     with the less vertices.
     */
     pub fn from_solution(inst:Rc<dyn ColoringInstance>, sol:&[Vec<VertexId>]) -> Self {
+        let n = inst.nb_vertices();
         assert_eq!(checker(inst.clone(), sol), CheckerResult::Ok(sol.len()));
         let mut res = Self {
             inst,
             colors: Vec::new(),
             nb_colors: sol.len()-1,
             nb_neigh_colors: Vec::new(),
-            conflicting_edges: Vec::new(),
+            conflicting_vertices: SparseSet::new(0),
+            vertex_nb_conflicts: Vec::new(),
             nb_conflicting_edges: 0,
             last_solution: sol.to_vec(),
             rng: Rng::new(),
+            best_nb_conflicts: 0,
+            tabu: TabuColTenure::new(10, 0.6, n, sol.len()),
         };
         res.remove_color();
         res
@@ -227,18 +242,24 @@ impl SearchState {
         }
         // update colors
         self.colors[decision.v] = decision.c_next;
-        // update conflicting edges
+        // update number of conflicting edges
         for u in self.inst.neighbors(decision.v) {
             if self.colors[u] == previous_color { // remove conflict
-                self.conflicting_edges[u].remove(decision.v);
-                self.conflicting_edges[decision.v].remove(u);
                 self.nb_conflicting_edges -= 1;
+                self.vertex_nb_conflicts[u] -= 1;
+                self.vertex_nb_conflicts[decision.v] -= 1;
             }
             if self.colors[u] == decision.c_next { // add conflict
-                self.conflicting_edges[u].insert(decision.v);
-                self.conflicting_edges[decision.v].insert(u);
                 self.nb_conflicting_edges += 1;
+                self.vertex_nb_conflicts[u] += 1;
+                self.vertex_nb_conflicts[decision.v] += 1;
+                self.conflicting_vertices.insert(u);
+                self.conflicting_vertices.insert(decision.v);
             }
+        }
+        // update best number of conflicts if needed
+        if self.nb_conflicting_edges < self.best_nb_conflicts {
+            self.best_nb_conflicts = self.nb_conflicting_edges;
         }
     }
 
@@ -254,10 +275,6 @@ impl SearchState {
     }
 
     fn nb_conflicting_edges(&self) -> i64 {
-        // let correct:i64 = self.conflicting_edges.iter().map(|e| e.len() as i64).sum::<i64>() / 2;
-        // // correct*2
-        // // println!("correct: {}\t current: {}", correct, self.nb_conflicting_edges);
-        // assert_eq!(correct, self.nb_conflicting_edges);
         self.nb_conflicting_edges
     }
 }
@@ -292,7 +309,7 @@ impl SearchSpace<Node, i32> for SearchState {
 
 impl DecisionSpace<Node, Decision> for SearchState {
     fn decision(&self, n:&Node) -> Option<Decision> { n.decision.clone() }
-    fn aspiration_criterion(&self, n:&Node) -> bool { n.nb_conflicts == 0 }
+    fn aspiration_criterion(&self, n:&Node) -> bool { n.nb_conflicts < self.best_nb_conflicts }
 }
 
 
@@ -303,43 +320,53 @@ impl TotalNeighborGeneration<Node> for SearchState {
             None => {
                 if node.nb_conflicts == 0 {
                     self.last_solution = self.build_solution();
-                    // println!("removing one color (nb_conflicts:{})", node.nb_conflicts);
                     self.remove_color();
+                } else {
+                    println!("neighbors: node should have a decision or no conflict");
                 }
             },
             Some(d) => self.commit(d)
         };
         // for each conflicting edge, mark endpoints as to visit
-        let mut vertices_to_change:BitSet<u64> = BitSet::default();
         let nb_conflicts = self.nb_conflicting_edges();
         if nb_conflicts == 0 {
             return vec![Node { decision:None, nb_conflicts:0 }];
         }
         // println!("{:?}", nb_conflicts);
-        for u in self.inst.vertices() {
-            for v in self.conflicting_edges[u].iter() {
-                if u < v { // for each conflicting edge (u,v), allows changing u and v
-                    if !vertices_to_change.contains(u) {
-                        vertices_to_change.insert(u);
-                    }
-                    if !vertices_to_change.contains(v) {
-                        vertices_to_change.insert(v);
-                    }
-                }
-            }
-        }
-        // for each vertex to try changing and other color (all but the original one)
+        // iterate over conflicting vertex, and try changing its color
         let mut res = Vec::new();
-        for v in vertices_to_change.iter() {
-            for c in 0..self.nb_colors {
-                if self.colors[v] != c {
-                    let new_nb_conflicts:i64 = nb_conflicts + 
-                        self.nb_neigh_colors[v][c] as i64 - self.nb_neigh_colors[v][self.colors[v]] as i64;
-                    res.push(Node {
-                        decision: Some(Decision {v, c_prev: self.colors[v], c_next: c}),
-                        nb_conflicts: new_nb_conflicts 
-                    })
+        let mut i = 0;
+        let mut best_nb_conflicts:i64 = i64::MAX;
+        // println!("{:?}", self.vertex_nb_conflicts);
+        self.tabu.increment_iter();
+        while i < self.conflicting_vertices.len() {
+            let v = self.conflicting_vertices.nth(i);
+            if self.vertex_nb_conflicts[v] > 0 { // u is indeed a conflicting vertex
+                for c in 0..self.nb_colors {
+                    if self.colors[v] != c {
+                        let new_nb_conflicts:i64 = nb_conflicts + 
+                            self.nb_neigh_colors[v][c] as i64 - self.nb_neigh_colors[v][self.colors[v]] as i64;
+                        if new_nb_conflicts <= best_nb_conflicts {
+                            // if better or equal number of conflicts, consider keeping the node
+                            let decision = Decision {v, c_prev: self.colors[v], c_next: c};
+                            let node = Node {
+                                decision: Some(decision.clone()),
+                                nb_conflicts: new_nb_conflicts 
+                            };
+                            if !self.tabu.contains(&node, &decision) {
+                                if new_nb_conflicts < best_nb_conflicts { // clear the result
+                                    best_nb_conflicts = new_nb_conflicts;
+                                    res.clear();
+                                }
+                                self.tabu.insert(&node, decision); // make the decision tabu
+                                res.push(node);
+                            }
+                        }
+                    }
                 }
+                i += 1;
+            } else {
+                self.conflicting_vertices.remove(v)
             }
         }
         res
@@ -353,15 +380,10 @@ Optionnaly, a filename is given to export the solution
 */
 pub fn tabucol_with_solution<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringInstance>, sol:&[Vec<VertexId>], stopping_criterion:Stopping, solution_filename:Option<String>) -> Vec<Vec<VertexId>> {
     let mut solution:Vec<Vec<VertexId>> = sol.to_vec();
-    let nb_colors = solution.len();
     let logger = Rc::new(MetricLogger::default());
     let space = Rc::new(RefCell::new(
         StatTsCombinator::new(
-            TabuCombinator::new(
-                SearchState::from_solution(inst.clone(), &solution),
-            TabuColTenure::new(inst.nb_vertices()/5, 0.5, inst.nb_vertices(), nb_colors)
-            // FullTabuTenure::default()
-            )
+            SearchState::from_solution(inst.clone(), &solution),
         ).bind_logger(Rc::downgrade(&logger)),
     ));
     let mut ts = Greedy::new(space.clone());

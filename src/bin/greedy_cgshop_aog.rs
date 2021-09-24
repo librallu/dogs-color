@@ -16,8 +16,7 @@ pub fn main() {
     let main_args = App::from_yaml(yaml).get_matches();
     let (
         inst_filename,
-        _,
-        _,
+        _, _, _,
         sol_file,
         perf_file
     ) = read_params(main_args);

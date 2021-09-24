@@ -10,7 +10,7 @@ use crate::{
 };
 
 /** reads command line input and returns the instance name, time, solution_filename, stats_filename */
-pub fn read_params(main_args:ArgMatches) -> (String, Rc<dyn ColoringInstance>, f32, Option<String>, Option<String>) {
+pub fn read_params(main_args:ArgMatches) -> (String, Rc<dyn ColoringInstance>, f32, String, Option<String>, Option<String>) {
     let inst_filename = main_args.value_of("instance").unwrap();
     let instance_type = main_args.value_of("type").unwrap();
     let t:f32 = main_args.value_of("time").unwrap().parse::<f32>()
@@ -43,7 +43,7 @@ pub fn read_params(main_args:ArgMatches) -> (String, Rc<dyn ColoringInstance>, f
     };
     instance.display_statistics();
     println!("=======================");
-    (inst_filename.to_string(), instance, t, sol_file, perf_file)
+    (inst_filename.to_string(), instance, t, instance_type.to_string(), sol_file, perf_file)
 }
 
 /// exports search results to files
