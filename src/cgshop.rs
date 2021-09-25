@@ -189,6 +189,43 @@ impl CGSHOPInstance {
         (dy/dx).atan() * 180. / PI
     }
 
+    /// writes the list of edges to a file
+    pub fn write_adj_list_file(&self, filename:&str) {
+        let m:u64 = self.neighbors.iter().map(|u| u.len() as u64).sum();
+        let mut s = String::new();
+        s += format!("{} {}\n", self.nb_vertices(), m).as_str();
+        for i in self.vertices() {
+            for j in self.neighbors(i) {
+                s += format!("{} ", j+1).as_str();
+            }
+            s += "\n";
+        }
+        let mut file = File::create(filename)
+            .expect("CGHSOPSolution.to_file: unable to open the file");
+        file.write_all(s.as_bytes())
+            .expect("unable to write file content");
+    }
+
+    /// writes the instance to the dimacs format
+    pub fn write_dimacs(&self, filename:&str) {
+        let n:usize = self.nb_vertices();
+        let m:u64 = self.neighbors.iter().map(|u| u.len() as u64).sum();
+        let mut s = String::new();
+        s += format!("c original: {}\n", self.id).as_str();
+        s += format!("p edge {} {}\n", n, m).as_str();
+        for u in self.vertices() {
+            for v in self.neighbors(u) {
+                if u < v {
+                    s += format!("e {} {}\n", u, v).as_str();
+                }
+            }
+        }
+        let mut file = File::create(filename)
+            .expect("CGHSOPSolution.to_file: unable to open the file");
+        file.write_all(s.as_bytes())
+            .expect("unable to write file content");
+    }
+
 }
 
 
@@ -398,6 +435,31 @@ mod tests {
         let _ = CGSHOPInstance::from_file(
             "./insts/cgshop22/vispecn74166.instance.json",
         );
+    }
+
+    #[test]
+    fn test_export() {
+        let inst = CGSHOPInstance::from_file(
+            "./insts/cgshop22/rvispecn17968.instance.json",
+        );
+        inst.write_adj_list_file("tmp/rvispecn17968.adjlist.txt")
+    }
+
+    #[test]
+    fn test_export2() {
+        let inst = CGSHOPInstance::from_file(
+            "./insts/cgshop22/rvisp3499.instance.json",
+        );
+        inst.write_adj_list_file("tmp/rvisp3499.adjlist.txt")
+    }
+
+    #[test]
+    fn test_export_dimacs() {
+        let name = "vispecn2518";
+        let inst = CGSHOPInstance::from_file(
+            format!("./insts/cgshop22/{}.instance.json", name).as_str(),
+        );
+        inst.write_dimacs(format!("insts/dimacs_cgshop/{}.dimacs.txt", name).as_str());
     }
 }
 
