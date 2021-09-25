@@ -216,7 +216,7 @@ impl CGSHOPInstance {
         for u in self.vertices() {
             for v in self.neighbors(u) {
                 if u < v {
-                    s += format!("e {} {}\n", u, v).as_str();
+                    s += format!("e {} {}\n", u+1, v+1).as_str();
                 }
             }
         }
