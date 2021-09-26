@@ -1,0 +1,535 @@
+{
+    "Bound": {
+        "Time": 3600.2563,
+        "Value": 258
+    },
+    "Bound1": {
+        "Bound": 153,
+        "String": "",
+        "Time": 221.4861
+    },
+    "Bound10": {
+        "Bound": 162,
+        "String": "",
+        "Time": 227.504
+    },
+    "Bound100": {
+        "Bound": 253,
+        "String": "",
+        "Time": 487.8615
+    },
+    "Bound101": {
+        "Bound": 254,
+        "String": "",
+        "Time": 490.2048
+    },
+    "Bound102": {
+        "Bound": 255,
+        "String": "",
+        "Time": 629.3208
+    },
+    "Bound103": {
+        "Bound": 256,
+        "String": "",
+        "Time": 697.0697
+    },
+    "Bound104": {
+        "Bound": 257,
+        "String": "",
+        "Time": 1240.745
+    },
+    "Bound105": {
+        "Bound": 258,
+        "String": "",
+        "Time": 1302.5303
+    },
+    "Bound11": {
+        "Bound": 163,
+        "String": "",
+        "Time": 227.5397
+    },
+    "Bound12": {
+        "Bound": 164,
+        "String": "",
+        "Time": 227.5446
+    },
+    "Bound13": {
+        "Bound": 165,
+        "String": "",
+        "Time": 227.5505
+    },
+    "Bound14": {
+        "Bound": 166,
+        "String": "",
+        "Time": 227.565
+    },
+    "Bound15": {
+        "Bound": 167,
+        "String": "",
+        "Time": 227.5721
+    },
+    "Bound16": {
+        "Bound": 168,
+        "String": "",
+        "Time": 227.6045
+    },
+    "Bound17": {
+        "Bound": 169,
+        "String": "",
+        "Time": 227.6166
+    },
+    "Bound18": {
+        "Bound": 170,
+        "String": "",
+        "Time": 227.6334
+    },
+    "Bound19": {
+        "Bound": 171,
+        "String": "",
+        "Time": 227.6514
+    },
+    "Bound2": {
+        "Bound": 154,
+        "String": "",
+        "Time": 227.4171
+    },
+    "Bound20": {
+        "Bound": 172,
+        "String": "",
+        "Time": 227.6644
+    },
+    "Bound21": {
+        "Bound": 173,
+        "String": "",
+        "Time": 227.7404
+    },
+    "Bound22": {
+        "Bound": 174,
+        "String": "",
+        "Time": 227.7457
+    },
+    "Bound23": {
+        "Bound": 175,
+        "String": "",
+        "Time": 227.7521
+    },
+    "Bound24": {
+        "Bound": 176,
+        "String": "",
+        "Time": 227.7655
+    },
+    "Bound25": {
+        "Bound": 177,
+        "String": "",
+        "Time": 227.7926
+    },
+    "Bound26": {
+        "Bound": 178,
+        "String": "",
+        "Time": 227.8045
+    },
+    "Bound27": {
+        "Bound": 179,
+        "String": "",
+        "Time": 227.8205
+    },
+    "Bound28": {
+        "Bound": 180,
+        "String": "",
+        "Time": 227.8809
+    },
+    "Bound29": {
+        "Bound": 181,
+        "String": "",
+        "Time": 227.9324
+    },
+    "Bound3": {
+        "Bound": 155,
+        "String": "",
+        "Time": 227.4439
+    },
+    "Bound30": {
+        "Bound": 182,
+        "String": "",
+        "Time": 227.9485
+    },
+    "Bound31": {
+        "Bound": 183,
+        "String": "",
+        "Time": 227.9603
+    },
+    "Bound32": {
+        "Bound": 184,
+        "String": "",
+        "Time": 228.1121
+    },
+    "Bound33": {
+        "Bound": 185,
+        "String": "",
+        "Time": 228.1195
+    },
+    "Bound34": {
+        "Bound": 186,
+        "String": "",
+        "Time": 228.1611
+    },
+    "Bound35": {
+        "Bound": 187,
+        "String": "",
+        "Time": 228.2497
+    },
+    "Bound36": {
+        "Bound": 188,
+        "String": "",
+        "Time": 228.258
+    },
+    "Bound37": {
+        "Bound": 189,
+        "String": "",
+        "Time": 228.3794
+    },
+    "Bound38": {
+        "Bound": 190,
+        "String": "",
+        "Time": 228.4601
+    },
+    "Bound39": {
+        "Bound": 191,
+        "String": "",
+        "Time": 228.4676
+    },
+    "Bound4": {
+        "Bound": 156,
+        "String": "",
+        "Time": 227.4487
+    },
+    "Bound40": {
+        "Bound": 192,
+        "String": "",
+        "Time": 228.5279
+    },
+    "Bound41": {
+        "Bound": 193,
+        "String": "",
+        "Time": 228.6447
+    },
+    "Bound42": {
+        "Bound": 194,
+        "String": "",
+        "Time": 228.668
+    },
+    "Bound43": {
+        "Bound": 195,
+        "String": "",
+        "Time": 228.8563
+    },
+    "Bound44": {
+        "Bound": 196,
+        "String": "",
+        "Time": 228.9435
+    },
+    "Bound45": {
+        "Bound": 197,
+        "String": "",
+        "Time": 228.9509
+    },
+    "Bound46": {
+        "Bound": 198,
+        "String": "",
+        "Time": 228.9846
+    },
+    "Bound47": {
+        "Bound": 199,
+        "String": "",
+        "Time": 229.072
+    },
+    "Bound48": {
+        "Bound": 200,
+        "String": "",
+        "Time": 229.1166
+    },
+    "Bound49": {
+        "Bound": 201,
+        "String": "",
+        "Time": 229.1246
+    },
+    "Bound5": {
+        "Bound": 157,
+        "String": "",
+        "Time": 227.4533
+    },
+    "Bound50": {
+        "Bound": 202,
+        "String": "",
+        "Time": 229.1828
+    },
+    "Bound51": {
+        "Bound": 203,
+        "String": "",
+        "Time": 229.2331
+    },
+    "Bound52": {
+        "Bound": 204,
+        "String": "",
+        "Time": 229.2767
+    },
+    "Bound53": {
+        "Bound": 205,
+        "String": "",
+        "Time": 229.4205
+    },
+    "Bound54": {
+        "Bound": 206,
+        "String": "",
+        "Time": 229.4769
+    },
+    "Bound55": {
+        "Bound": 207,
+        "String": "",
+        "Time": 229.5773
+    },
+    "Bound56": {
+        "Bound": 208,
+        "String": "",
+        "Time": 229.6001
+    },
+    "Bound57": {
+        "Bound": 209,
+        "String": "",
+        "Time": 229.9301
+    },
+    "Bound58": {
+        "Bound": 210,
+        "String": "",
+        "Time": 229.9881
+    },
+    "Bound59": {
+        "Bound": 211,
+        "String": "",
+        "Time": 230.6967
+    },
+    "Bound6": {
+        "Bound": 158,
+        "String": "",
+        "Time": 227.4575
+    },
+    "Bound60": {
+        "Bound": 212,
+        "String": "",
+        "Time": 230.9606
+    },
+    "Bound61": {
+        "Bound": 213,
+        "String": "",
+        "Time": 230.9883
+    },
+    "Bound62": {
+        "Bound": 214,
+        "String": "",
+        "Time": 231.0172
+    },
+    "Bound63": {
+        "Bound": 215,
+        "String": "",
+        "Time": 231.1569
+    },
+    "Bound64": {
+        "Bound": 216,
+        "String": "",
+        "Time": 231.7088
+    },
+    "Bound65": {
+        "Bound": 218,
+        "String": "",
+        "Time": 232.2034
+    },
+    "Bound66": {
+        "Bound": 219,
+        "String": "",
+        "Time": 232.4756
+    },
+    "Bound67": {
+        "Bound": 220,
+        "String": "",
+        "Time": 232.7157
+    },
+    "Bound68": {
+        "Bound": 221,
+        "String": "",
+        "Time": 232.9598
+    },
+    "Bound69": {
+        "Bound": 222,
+        "String": "",
+        "Time": 233.3214
+    },
+    "Bound7": {
+        "Bound": 159,
+        "String": "",
+        "Time": 227.4624
+    },
+    "Bound70": {
+        "Bound": 223,
+        "String": "",
+        "Time": 233.5335
+    },
+    "Bound71": {
+        "Bound": 224,
+        "String": "",
+        "Time": 233.6086
+    },
+    "Bound72": {
+        "Bound": 225,
+        "String": "",
+        "Time": 233.6158
+    },
+    "Bound73": {
+        "Bound": 226,
+        "String": "",
+        "Time": 234.2171
+    },
+    "Bound74": {
+        "Bound": 227,
+        "String": "",
+        "Time": 234.2361
+    },
+    "Bound75": {
+        "Bound": 228,
+        "String": "",
+        "Time": 234.9887
+    },
+    "Bound76": {
+        "Bound": 229,
+        "String": "",
+        "Time": 235.8287
+    },
+    "Bound77": {
+        "Bound": 230,
+        "String": "",
+        "Time": 235.8652
+    },
+    "Bound78": {
+        "Bound": 231,
+        "String": "",
+        "Time": 239.9095
+    },
+    "Bound79": {
+        "Bound": 232,
+        "String": "",
+        "Time": 239.9165
+    },
+    "Bound8": {
+        "Bound": 160,
+        "String": "",
+        "Time": 227.4733
+    },
+    "Bound80": {
+        "Bound": 233,
+        "String": "",
+        "Time": 243.1685
+    },
+    "Bound81": {
+        "Bound": 234,
+        "String": "",
+        "Time": 243.5161
+    },
+    "Bound82": {
+        "Bound": 235,
+        "String": "",
+        "Time": 244.2527
+    },
+    "Bound83": {
+        "Bound": 236,
+        "String": "",
+        "Time": 252.1247
+    },
+    "Bound84": {
+        "Bound": 237,
+        "String": "",
+        "Time": 252.913
+    },
+    "Bound85": {
+        "Bound": 238,
+        "String": "",
+        "Time": 252.9189
+    },
+    "Bound86": {
+        "Bound": 239,
+        "String": "",
+        "Time": 254.9897
+    },
+    "Bound87": {
+        "Bound": 240,
+        "String": "",
+        "Time": 274.5405
+    },
+    "Bound88": {
+        "Bound": 241,
+        "String": "",
+        "Time": 277.5054
+    },
+    "Bound89": {
+        "Bound": 242,
+        "String": "",
+        "Time": 311.3332
+    },
+    "Bound9": {
+        "Bound": 161,
+        "String": "",
+        "Time": 227.492
+    },
+    "Bound90": {
+        "Bound": 243,
+        "String": "",
+        "Time": 328.3972
+    },
+    "Bound91": {
+        "Bound": 244,
+        "String": "",
+        "Time": 336.1643
+    },
+    "Bound92": {
+        "Bound": 245,
+        "String": "",
+        "Time": 344.589
+    },
+    "Bound93": {
+        "Bound": 246,
+        "String": "",
+        "Time": 353.1849
+    },
+    "Bound94": {
+        "Bound": 247,
+        "String": "",
+        "Time": 353.2251
+    },
+    "Bound95": {
+        "Bound": 248,
+        "String": "",
+        "Time": 353.3708
+    },
+    "Bound96": {
+        "Bound": 249,
+        "String": "",
+        "Time": 437.0439
+    },
+    "Bound97": {
+        "Bound": 250,
+        "String": "",
+        "Time": 438.5565
+    },
+    "Bound98": {
+        "Bound": 251,
+        "String": "",
+        "Time": 439.1914
+    },
+    "Bound99": {
+        "Bound": 252,
+        "String": "",
+        "Time": 462.6302
+    },
+    "Solution": {
+        "Time": 3600.2563,
+        "Value": 34308
+    }
+}

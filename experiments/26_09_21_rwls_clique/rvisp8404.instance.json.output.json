@@ -1,0 +1,110 @@
+{
+    "Bound": {
+        "Time": 3600.1641,
+        "Value": 45
+    },
+    "Bound1": {
+        "Bound": 26,
+        "String": "",
+        "Time": 8.962
+    },
+    "Bound10": {
+        "Bound": 35,
+        "String": "",
+        "Time": 9.5153
+    },
+    "Bound11": {
+        "Bound": 36,
+        "String": "",
+        "Time": 9.5224
+    },
+    "Bound12": {
+        "Bound": 37,
+        "String": "",
+        "Time": 9.5273
+    },
+    "Bound13": {
+        "Bound": 38,
+        "String": "",
+        "Time": 9.5302
+    },
+    "Bound14": {
+        "Bound": 39,
+        "String": "",
+        "Time": 9.5338
+    },
+    "Bound15": {
+        "Bound": 40,
+        "String": "",
+        "Time": 9.5411
+    },
+    "Bound16": {
+        "Bound": 41,
+        "String": "",
+        "Time": 9.5542
+    },
+    "Bound17": {
+        "Bound": 42,
+        "String": "",
+        "Time": 9.5914
+    },
+    "Bound18": {
+        "Bound": 43,
+        "String": "",
+        "Time": 9.6331
+    },
+    "Bound19": {
+        "Bound": 44,
+        "String": "",
+        "Time": 9.9857
+    },
+    "Bound2": {
+        "Bound": 27,
+        "String": "",
+        "Time": 9.4772
+    },
+    "Bound20": {
+        "Bound": 45,
+        "String": "",
+        "Time": 36.4537
+    },
+    "Bound3": {
+        "Bound": 28,
+        "String": "",
+        "Time": 9.4799
+    },
+    "Bound4": {
+        "Bound": 29,
+        "String": "",
+        "Time": 9.4826
+    },
+    "Bound5": {
+        "Bound": 30,
+        "String": "",
+        "Time": 9.4878
+    },
+    "Bound6": {
+        "Bound": 31,
+        "String": "",
+        "Time": 9.4906
+    },
+    "Bound7": {
+        "Bound": 32,
+        "String": "",
+        "Time": 9.4965
+    },
+    "Bound8": {
+        "Bound": 33,
+        "String": "",
+        "Time": 9.5039
+    },
+    "Bound9": {
+        "Bound": 34,
+        "String": "",
+        "Time": 9.5086
+    },
+    "Solution": {
+        "Time": 3600.1641,
+        "Value": 8405
+    }
+}
