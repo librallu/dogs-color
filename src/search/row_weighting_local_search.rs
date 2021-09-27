@@ -1,4 +1,4 @@
-use std::{ops::BitAnd, rc::Rc, thread::current};
+use std::{ops::BitAnd, rc::Rc, thread::current, time::Instant};
 
 use bit_set::BitSet;
 use fastrand::Rng;
@@ -28,6 +28,7 @@ pub fn row_weighting_local_search<Stopping:StoppingCriterion>(inst:Rc<dyn Colori
     // perform iterations
     while !stopping_criterion.is_finished() {
         // merge 2 colors, minimizing the weight of the conflicting edges until there are some conflicts
+        let time_start_merging = Instant::now();
         let mut best_penalties:Penalty;
         let mut current_best:Option<(VertexId,VertexId)>;
         loop {
@@ -60,7 +61,10 @@ pub fn row_weighting_local_search<Stopping:StoppingCriterion>(inst:Rc<dyn Colori
                 println!("merging with 0 penalties!");
             }
         }
-        println!("merging {:?}, with {} penalties", current_best, best_penalties);
+        println!(
+            "merging {:?}, with {} penalties ({:.3} seconds)",
+            current_best, best_penalties, time_start_merging.elapsed().as_secs_f32()
+        );
         // perform the local search
     }
 
