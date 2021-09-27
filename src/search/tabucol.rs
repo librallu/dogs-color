@@ -219,7 +219,7 @@ impl SearchState {
             last_solution: sol.to_vec(),
             rng: Rng::new(),
             best_nb_conflicts: 0,
-            tabu: TabuColTenure::new(10, 0.6, n, sol.len()),
+            tabu: TabuColTenure::new(n/35, 0.5, n, sol.len()),
         };
         res.remove_color();
         res

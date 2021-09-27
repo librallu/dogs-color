@@ -1,5 +1,8 @@
 //! Search spaces for the graph coloring problem.
 
+/// utility solvers
+pub mod util;
+
 /// greedy DSATUR algorithm
 pub mod greedy_dsatur;
 
@@ -9,14 +12,11 @@ pub mod greedy_rlf;
 /// greedy that finds a clique of "large" size
 pub mod greedy_clique;
 
-/// TABUCOL implementation 
+/// TABUCOL implementation for the vertex coloring problem
 pub mod tabucol;
 
-/// Admissible Orientation Greedy algorithm for the CGSHOP competition
-pub mod cgshop_aog;
-
-// /// Stable generation based algorithm for the CGSHOP competition
-// pub mod cgshop_stable_generation;
+/// row weighting local search for the vertex coloring problem
+pub mod row_weighting_local_search;
 
 /// Ejection chains. Removes the smallest color, and try to insert it to the minimum conflicting color.
 pub mod ejection_chains;
@@ -27,8 +27,11 @@ pub mod clique_bnb;
 /// swap moves for the CLIQUE problem
 pub mod clique_swap;
 
-/// utility solvers
-pub mod util;
+/// Admissible Orientation Greedy algorithm for the CGSHOP competition
+pub mod cgshop_aog;
+
+// /// Stable generation based algorithm for the CGSHOP competition
+// pub mod cgshop_stable_generation;
 
 // /// backtracking-based dsatur
 // pub mod backtracking_dsatur;
