@@ -40,10 +40,10 @@ pub fn row_weighting_local_search<Stopping:StoppingCriterion>(inst:Rc<dyn Colori
                 for (i2, color2) in current_sol.iter().enumerate() {
                     if i2 < i1 {
                         let mut current_penalties:Penalty = 0;
-                        for u in color2 {
-                            for v in inst.neighbors(*u) {
-                                if color1_bitset.contains(v) {
-                                    current_penalties += penalties[*u][v];
+                        for v in color1 {
+                            for u in color2 {
+                                if inst.are_adjacent(*u, *v) {
+                                    current_penalties += penalties[*u][*v];
                                 }
                             }
                         }
@@ -130,7 +130,7 @@ mod tests {
     #[test]
     fn test_rwls() {
         let inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/cgshop22/reecn3382.instance.json"
+            "./insts/cgshop22/reecn9674.instance.json"
         ));
         let greedy_sol = greedy_dsatur(inst.clone(), false);
         println!("initial solution: {}", greedy_sol.len());
