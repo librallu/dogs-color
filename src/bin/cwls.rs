@@ -6,7 +6,7 @@ use dogs::search_algorithm::TimeStoppingCriterion;
 
 use dogs_color::cgshop::CGSHOPInstance;
 use dogs_color::search::cgshop_aog::cgshop_aog;
-use dogs_color::search::row_weighting_local_search::row_weighting_local_search;
+use dogs_color::search::row_weighting_local_search::{conflict_weighting_local_search};
 use dogs_color::search::greedy_dsatur::greedy_dsatur;
 use dogs_color::util::{read_params, export_results};
 use serde_json::json;
@@ -42,12 +42,12 @@ pub fn main() {
         _ => { panic!("unrecognized instance type {} (valid: 'dimacs', 'cgshop')", instance_type.as_str())}
     };
     println!("greedy found {} colors", sol_greedy.len());
-    row_weighting_local_search(
+    conflict_weighting_local_search(
         instance,
         &sol_greedy,
         TimeStoppingCriterion::new(t),
-        sol_file,
-        perf_file,
+        // sol_file,
+        // perf_file,
         time_init.elapsed().as_secs_f32()
     );
     // let solution = tabucol_with_solution(

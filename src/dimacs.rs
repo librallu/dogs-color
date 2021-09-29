@@ -89,7 +89,9 @@ impl DimacsInstance {
         }
         m /= 2; // m = (∑ d(v)) / 2
         let edges = Self::build_edges(&adj_list);
-        Self { n,m, edges, adj_list, adj_matrix:None }
+        let mut res = Self { n,m, edges, adj_list, adj_matrix:None };
+        res.populate_adj_matrix();
+        res
     }
 
     /// creates an instance from a DIMACS file
