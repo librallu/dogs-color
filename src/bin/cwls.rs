@@ -6,10 +6,9 @@ use dogs::search_algorithm::TimeStoppingCriterion;
 
 use dogs_color::cgshop::CGSHOPInstance;
 use dogs_color::search::cgshop_aog::cgshop_aog;
-use dogs_color::search::row_weighting_local_search::{conflict_weighting_local_search};
+use dogs_color::search::conflict_weighting_local_search::{conflict_weighting_local_search};
 use dogs_color::search::greedy_dsatur::greedy_dsatur;
-use dogs_color::util::{read_params, export_results};
-use serde_json::json;
+use dogs_color::util::read_params;
 
 
 /** solves a coloring instance using a DSATUR greedy */
@@ -41,27 +40,12 @@ pub fn main() {
         },
         _ => { panic!("unrecognized instance type {} (valid: 'dimacs', 'cgshop')", instance_type.as_str())}
     };
-    println!("greedy found {} colors", sol_greedy.len());
+    println!("greedy found {} colors in {:.3} seconds", sol_greedy.len(), time_init.elapsed().as_secs_f32());
     conflict_weighting_local_search(
         instance,
         &sol_greedy,
-        TimeStoppingCriterion::new(t),
-        // sol_file,
-        // perf_file,
-        time_init.elapsed().as_secs_f32()
+        perf_file,
+        sol_file,
+        TimeStoppingCriterion::new(t)
     );
-    // let solution = tabucol_with_solution(
-    //     instance.clone(),
-    //     &sol_greedy,
-    //     TimeStoppingCriterion::new(t),
-    //     None
-    // );
-    // let stats = json!({
-    //     "primal_list": vec![solution.len()],
-    //     "time_searched": t,
-    //     "inst_name": inst_filename
-    // });
-
-    // // export results
-    // export_results(instance, &solution, &stats, perf_file, sol_file);
 }

@@ -9,13 +9,13 @@ Discrete Optimization Global Search for the Graph Coloring problem
 - [X] custom DSATUR algorithm (less memory requirement)
 
 
-# Preprocessings
+# Preprocessing
 
 - [X] Dominated vertices: $u$ dominates $v$ if $N(v) \subseteq N(u)$. In this case, $v$ can be safely removed and
       colored using the same color as $u$.
 - [ ] Consider a lower bound $B$ on the number of colors (for instance obtained using a CLIQUE algorithm).
       We can safely remove all the vertices where $\delta(v) < B-1$ as it can be colored using colors 1 to $B$.
-- [ ] Instance abstraction to use pre-processings 
+- [ ] Instance abstraction to use preprocessing 
 - [ ] Store coloring / cliques to reuse them later if needed
 
 # Algorithms

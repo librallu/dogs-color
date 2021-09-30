@@ -15,8 +15,8 @@ pub mod greedy_clique;
 /// TABUCOL implementation for the vertex coloring problem
 pub mod tabucol;
 
-/// row weighting local search for the vertex coloring problem
-pub mod row_weighting_local_search;
+/// conflict weighting local search for the vertex coloring problem
+pub mod conflict_weighting_local_search;
 
 /// Ejection chains. Removes the smallest color, and try to insert it to the minimum conflicting color.
 pub mod ejection_chains;

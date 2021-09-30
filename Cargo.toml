@@ -53,6 +53,9 @@ path = "src/bin/cgshop_checker.rs"
 name = "clique_tabu_swap"
 path = "src/bin/clique_tabu_swap.rs"
 
+[[bin]]
+name = "cwls"
+path = "src/bin/cwls.rs"
 
 # # build for CBC
 # [build]

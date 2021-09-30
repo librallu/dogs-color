@@ -1,15 +1,22 @@
-use std::{rc::Rc, time::Instant};
+use std::{cell::RefCell, rc::Rc};
 
 use bit_set::BitSet;
 use fastrand::Rng;
 
 use dogs::{
-    combinators::helper::tabu_tenure::TabuTenure,
+    combinators::{helper::tabu_tenure::TabuTenure, stats::StatTsCombinator},
     data_structures::sparse_set::SparseSet,
-    search_algorithm::StoppingCriterion
+    metric_logger::MetricLogger,
+    search_algorithm::StoppingCriterion,
+    search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution},
+    tree_search::greedy::Greedy,
+    search_algorithm::SearchAlgorithm
 };
 
-use crate::color::{ColoringInstance, VertexId};
+use crate::{
+    color::{ColoringInstance, VertexId},
+    util::export_results
+};
 
 type Weight = u16;
 
@@ -114,6 +121,8 @@ struct ConflictWeightingLocalSearch {
     nb_iter:i64,
     /// number of colors at the beginning of the search
     nb_colors:usize,
+    /// number of colors removed since the beginning of the search (best-so-far coloring)
+    best_so_far_colors:usize,
 }
 
 impl ConflictWeightingLocalSearch {
@@ -155,7 +164,8 @@ impl ConflictWeightingLocalSearch {
             tabu: TabuColTenure::new(10, 0.6, n, nb_colors),
             aspiration_criterion: i64::MAX,
             nb_iter: 0,
-            nb_colors
+            nb_colors,
+            best_so_far_colors: nb_colors,
         }
     }
 
@@ -191,53 +201,15 @@ impl ConflictWeightingLocalSearch {
             }
             // quit if there are some conflicts, otherwise, repeat
             if self.is_goal() { // if goal, update the solution
-                println!("merge found an improving solution: (new number of colors: {})", self.nb_colors());
                 self.update_current_solution();
             } else { break; }
         }
     }
 
-    /// find best move
-    fn find_best_move(&mut self) -> Node {
-        let mut best_node:Node = Node {
-            vertex:0, previous_color:0, next_color:0, total_penalties:Weight::MAX, nb_conflicts:0
-        };
-        let mut i = 0;
-        while i < self.conflicting_vertices.len() { // iterate over conflicting vertices
-            let u = self.conflicting_vertices.nth(i);
-            if self.vertex_nb_conflicts[u] > 0 { // u has indeed some conflicts
-                // for each vertex, try changing its color by an existing other color
-                for c in 0..self.nb_colors {
-                    if c != self.colors[u] && self.colors_vertex_number[c] > 0 {
-                        let current_penalties:Weight = self.total_weight +
-                            self.weights_neigh_colors[u][c] - self.weights_neigh_colors[u][self.colors[u]];
-                        if current_penalties < best_node.total_penalties { // find the best node
-                            let current_node = Node {
-                                vertex:u,
-                                previous_color:self.colors[u],
-                                next_color:c,
-                                total_penalties:current_penalties,
-                                nb_conflicts: self.nb_conflicting_edges
-                            };
-                            let is_tabu = self.tabu.contains(&current_node, &current_node);
-                            if !is_tabu || self.nb_conflicting_edges < self.aspiration_criterion {
-                                best_node = current_node; 
-                            }
-                        }
-                    }
-                }
-                i += 1;
-            } else {
-                self.conflicting_vertices.remove(u); // update conflicting_vertices if it has no conflict
-            }
-        }
-        best_node
-    }
-
     /// applies a move (coloring a vertex with a color)
-    fn commit(&mut self, node:Node) {
+    fn commit(&mut self, node:&Node) {
         // mark the move tabu
-        self.tabu.insert(&node, node.clone()); // make the decision tabu
+        self.tabu.insert(node, node.clone()); // make the decision tabu
         self.tabu.increment_iter();
         self.nb_iter += 1;
         self.change_vertex_color(node.vertex, node.next_color);
@@ -290,6 +262,7 @@ impl ConflictWeightingLocalSearch {
             new_solution[*c].push(v);
         }
         self.current_sol = new_solution;
+        self.best_so_far_colors = self.current_sol.iter().filter(|e| !e.is_empty()).count();
     }
 
     /// get the learned weight of an edge
@@ -304,55 +277,126 @@ impl ConflictWeightingLocalSearch {
         else { self.weights[u][v] += 1 }
     }
 
-    /// gets the current number of colors
-    fn nb_colors(&self) -> usize { self.current_sol.iter().filter(|e| !e.is_empty()).count() }
-
     /// true iff state is feasible
     fn is_goal(&self) -> bool { self.total_weight == 0 }
-
-    /// displays short statistics about the search
-    fn display_log_line(&self, time:f32) {
-        println!(" {:<15.3} it: {:<15} colors: {:<15} conflicts: {:<15} weight: {:<15}",
-            time, self.nb_iter, self.nb_colors(), self.nb_conflicting_edges, self.total_weight
-        );
-    }
-
-    /// get current solution
-    fn get_solution(&self) -> Vec<Vec<VertexId>> {
-        assert!(self.is_goal());
-        self.current_sol.iter().filter(|e| !e.is_empty()).cloned().collect()
-    }
-
 }
 
-/** performs a conflict weighting local search. */
-pub fn conflict_weighting_local_search<Stopping:StoppingCriterion>(inst:Rc<dyn ColoringInstance>, sol:&[Vec<VertexId>], stop:Stopping, time_initial_solution:f32) -> Vec<Vec<VertexId>> {
-    let time_init = Instant::now();
-    let mut best_sol = sol.to_vec();
-    let mut state = ConflictWeightingLocalSearch::initialize(inst, sol);
-    println!("CWLS init time: {:.3}", time_init.elapsed().as_secs_f32());
-    while !stop.is_finished() {
-        // remove some colors
-        // let time_merge = Instant::now();
-        state.merge_colors();
-        // println!("CWLS merge time: {:.3}", time_merge.elapsed().as_secs_f32());
-        // repair
-        // let time_repair = Instant::now();
-        while !state.is_goal() && !stop.is_finished() {
-            let node = state.find_best_move();
-            state.commit(node);
-            if state.nb_iter % 10000 == 0 {
-                state.display_log_line(time_initial_solution+time_init.elapsed().as_secs_f32());
+impl GuidedSpace<Node, i64> for ConflictWeightingLocalSearch {
+    fn guide(&mut self, node: &Node) -> i64 {
+        node.total_penalties as i64
+    }
+}
+
+impl ToSolution<Node, Vec<Vec<VertexId>>> for ConflictWeightingLocalSearch {
+    fn solution(&mut self, _: &mut Node) -> Vec<Vec<VertexId>> {
+        self.current_sol.iter().filter(|e| !e.is_empty()).cloned().collect()
+    }
+}
+
+impl SearchSpace<Node, i32> for ConflictWeightingLocalSearch {
+    fn initial(&mut self) -> Node {
+        Node {
+            vertex: 0,
+            previous_color: self.colors[0],
+            next_color: self.colors[0],
+            total_penalties: 0,
+            nb_conflicts: 0,
+        }
+    }
+    fn bound(&mut self, _node: &Node) -> i32 { self.best_so_far_colors as i32 }
+    fn goal(&mut self, n: &Node) -> bool { n.nb_conflicts == 0 }
+    fn g_cost(&mut self, _n: &Node) -> i32 { 0 }
+}
+
+impl TotalNeighborGeneration<Node> for ConflictWeightingLocalSearch {
+    fn neighbors(&mut self, node: &mut Node) -> Vec<Node> {
+        if node.previous_color != node.next_color { // if not a dummy decision, commit it
+            self.commit(node);
+        }
+        if self.goal(node) { // if no conflict, merge some colors
+            assert!(self.is_goal()); // the search state should be a goal here
+            self.merge_colors();
+        }
+        let mut best_nodes = vec![
+            Node {vertex:0, previous_color:0, next_color:0, total_penalties:Weight::MAX, nb_conflicts:0}
+        ];
+        let mut i = 0;
+        while i < self.conflicting_vertices.len() { // iterate over conflicting vertices
+            let u = self.conflicting_vertices.nth(i);
+            if self.vertex_nb_conflicts[u] > 0 { // u has indeed some conflicts
+                // for each vertex, try changing its color by an existing other color
+                for c in 0..self.nb_colors {
+                    if c != self.colors[u] && self.colors_vertex_number[c] > 0 {
+                        let current_penalties:Weight = self.total_weight +
+                            self.weights_neigh_colors[u][c] - self.weights_neigh_colors[u][self.colors[u]];
+                        if current_penalties <= best_nodes[0].total_penalties {
+                            let current_node = Node {
+                                vertex:u,
+                                previous_color:self.colors[u],
+                                next_color:c,
+                                total_penalties:current_penalties,
+                                nb_conflicts: self.nb_conflicting_edges
+                            };
+                            let is_tabu = self.tabu.contains(&current_node, &current_node);
+                            if !is_tabu || self.nb_conflicting_edges < self.aspiration_criterion {
+                                if current_penalties < best_nodes[0].total_penalties {
+                                    best_nodes.clear();
+                                }
+                                best_nodes.push(current_node); 
+                            }
+                        }
+                    }
+                }
+                i += 1;
+            } else {
+                self.conflicting_vertices.remove(u); // update conflicting_vertices if it has no conflict
             }
         }
-        if state.is_goal() { // new feasible solution
-            // println!("{} colors", state.nb_colors());
-            state.display_log_line(time_initial_solution+time_init.elapsed().as_secs_f32());
-            best_sol = state.get_solution();
-        }
-        // println!("CWLS repair time: {:.3}", time_repair.elapsed().as_secs_f32());
+        best_nodes
     }
-    best_sol
+}
+
+
+/** performs a conflict weighting local search. */
+pub fn conflict_weighting_local_search<Stopping:StoppingCriterion>(
+inst:Rc<dyn ColoringInstance>,
+sol:&[Vec<VertexId>],
+perf_filename:Option<String>,
+sol_filename:Option<String>,
+stop:Stopping
+) -> Vec<Vec<VertexId>> {
+    let mut solution:Vec<Vec<VertexId>> = sol.to_vec();
+    let logger = Rc::new(MetricLogger::default());
+    let space = Rc::new(RefCell::new(
+        StatTsCombinator::new(
+            ConflictWeightingLocalSearch::initialize(inst.clone(), &solution),
+        ).bind_logger(Rc::downgrade(&logger)),
+    ));
+    let mut ts = Greedy::new(space.clone());
+    logger.display_headers();
+    ts.run(stop);
+    // display the results afterwards
+    space.borrow_mut().display_statistics();
+    // check that the last solution is valid
+    match ts.get_manager().best() {
+        None => {
+            println!("\tlocal search failed improving...");
+        }
+        Some(node) => {
+            assert_eq!(node.nb_conflicts, 0);
+            solution = space.borrow_mut().solution(&mut node.clone());
+        }  
+    }
+    let mut stats = serde_json::Value::default();
+    space.borrow_mut().json_statistics(&mut stats);
+    export_results(
+        inst,
+        &solution,
+        &stats,
+        perf_filename,
+        sol_filename
+    );
+    solution
 }
 
 
@@ -362,106 +406,28 @@ mod tests {
 
     use dogs::search_algorithm::TimeStoppingCriterion;
     
-    use crate::{cgshop::CGSHOPInstance, dimacs::DimacsInstance, search::greedy_dsatur::greedy_dsatur};
+    use crate::{cgshop::CGSHOPInstance, search::greedy_dsatur::greedy_dsatur};
 
     #[test]
     fn test_cwls() {
-        let time_init = Instant::now();
         let inst = Rc::new(CGSHOPInstance::from_file(
+            "./insts/cgshop22/vispecn2518.instance.json"
             // "./insts/cgshop22/reecn3382.instance.json"
-            // "./insts/cgshop22/reecn9674.instance.json"
-            // "./insts/cgshop22/reecn12588.instance.json"
-            // "./insts/cgshop22/reecn31126.instance.json"
-            // "./insts/cgshop22/reecn73116.instance.json"
-            "./insts/cgshop22/rvispecn17968.instance.json"
-            // "./insts/cgshop_22_examples/visp_5K.instance.json"
-            // "./insts/cgshop_22_examples/sqrm_10K_5.instance.json"
-        ));
-        let greedy_sol = greedy_dsatur(inst.clone(), false);
-        println!("initial solution: {}", greedy_sol.len());
-        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3000.);
-        conflict_weighting_local_search(inst, &greedy_sol, stopping_criterion, time_init.elapsed().as_secs_f32());
-    }
-
-    #[test]
-    fn test_cwls2() {
-        let time_init = Instant::now();
-        let inst = Rc::new(CGSHOPInstance::from_file(
-            // "./insts/cgshop22/reecn3382.instance.json"
+            // "./insts/cgshop22/rvisp3499.instance.json"
             // "./insts/cgshop22/reecn9674.instance.json"
             // "./insts/cgshop22/reecn12588.instance.json"
             // "./insts/cgshop22/reecn31126.instance.json"
             // "./insts/cgshop22/reecn73116.instance.json"
             // "./insts/cgshop22/rvispecn17968.instance.json"
-            "./insts/cgshop22/sqrp63650.instance.json"
-            // "./insts/cgshop_22_examples/visp_5K.instance.json"
-            // "./insts/cgshop_22_examples/sqrm_10K_5.instance.json"
-        ));
-        let greedy_sol = greedy_dsatur(inst.clone(), false);
-        println!("initial solution: {}", greedy_sol.len());
-        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3000.);
-        conflict_weighting_local_search(inst, &greedy_sol, stopping_criterion, time_init.elapsed().as_secs_f32());
-    }
-
-
-    #[test]
-    fn test_cwls3() {
-        let time_init = Instant::now();
-        let inst = Rc::new(CGSHOPInstance::from_file(
-            // "./insts/cgshop22/reecn3382.instance.json"
-            // "./insts/cgshop22/reecn9674.instance.json"
-            // "./insts/cgshop22/reecn12588.instance.json"
-            // "./insts/cgshop22/reecn31126.instance.json"
-            // "./insts/cgshop22/reecn73116.instance.json"
-            // "./insts/cgshop22/rvispecn17968.instance.json"
-            // "./insts/cgshop22/sqrpecn71571.instance.json"
-            "./insts/cgshop22/sqrp63650.instance.json"
-            // "./insts/cgshop22/rvispecn13421.instance.json"
-            // "./insts/cgshop_22_examples/visp_5K.instance.json"
-            // "./insts/cgshop_22_examples/sqrm_10K_5.instance.json"
-        ));
-        let greedy_sol = greedy_dsatur(inst.clone(), false);
-        println!("initial solution: {}", greedy_sol.len());
-        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3000.);
-        conflict_weighting_local_search(inst, &greedy_sol, stopping_criterion, time_init.elapsed().as_secs_f32());
-    }
-
-
-    #[test]
-    fn test_cwls4() {
-        let time_init = Instant::now();
-        let inst = Rc::new(CGSHOPInstance::from_file(
-            // "./insts/cgshop22/reecn3382.instance.json"
-            // "./insts/cgshop22/vispecn2518.instance.json"
-            // "./insts/cgshop22/reecn9674.instance.json"
-            // "./insts/cgshop22/reecn12588.instance.json"
-            // "./insts/cgshop22/reecn31126.instance.json"
-            // "./insts/cgshop22/reecn73116.instance.json"
-            // "./insts/cgshop22/rvispecn17968.instance.json"
-            // "./insts/cgshop22/vispecn74166.instance.json"
-            // "./insts/cgshop22/sqrp73525.instance.json"
-            // "./insts/cgshop22/sqrpecn71571.instance.json"
-            "./insts/cgshop22/rvispecn13421.instance.json"
             // "./insts/cgshop_22_examples/visp_5K.instance.json"
             // "./insts/cgshop_22_examples/sqrm_10K_5.instance.json"
         ));
         let greedy_sol = greedy_dsatur(inst.clone(), false);
         println!("initial solution: {}", greedy_sol.len());
         let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(30.);
-        conflict_weighting_local_search(inst, &greedy_sol, stopping_criterion, time_init.elapsed().as_secs_f32());
-    }
-
-
-    #[test]
-    fn test_cwls5() {
-        let time_init = Instant::now();
-        let inst = Rc::new(DimacsInstance::from_file(
-            "insts/instances-dimacs1/DSJC1000.9.col"
-        ));
-        let greedy_sol = greedy_dsatur(inst.clone(), false);
-        println!("initial solution: {}", greedy_sol.len());
-        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(30.);
-        conflict_weighting_local_search(inst, &greedy_sol, stopping_criterion, time_init.elapsed().as_secs_f32());
+        conflict_weighting_local_search(
+            inst, &greedy_sol, None, None , stopping_criterion
+        );
     }
 
 }
