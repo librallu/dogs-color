@@ -6,7 +6,7 @@ use dogs::search_algorithm::TimeStoppingCriterion;
 
 use dogs_color::cgshop::CGSHOPInstance;
 use dogs_color::search::cgshop_aog::cgshop_aog;
-use dogs_color::search::conflict_weighting_local_search::{conflict_weighting_local_search};
+use dogs_color::search::coloring_conflict_weighting::{coloring_conflict_weighting};
 use dogs_color::search::greedy_dsatur::greedy_dsatur;
 use dogs_color::util::read_params;
 
@@ -41,7 +41,7 @@ pub fn main() {
         _ => { panic!("unrecognized instance type {} (valid: 'dimacs', 'cgshop')", instance_type.as_str())}
     };
     println!("greedy found {} colors in {:.3} seconds", sol_greedy.len(), time_init.elapsed().as_secs_f32());
-    conflict_weighting_local_search(
+    coloring_conflict_weighting(
         instance,
         &sol_greedy,
         perf_file,

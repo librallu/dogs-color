@@ -63,8 +63,7 @@ impl ColoringInstance for CGSHOPInstance {
     fn degree(&self, u:VertexId) -> usize { self.preprocessed.as_ref().unwrap().degrees[u] }
 
     fn neighbors(&self, u:VertexId) -> Vec<VertexId> {
-        (0..self.m()).filter(move |v| *v != u)
-            .filter(|v| self.are_adjacent(u, *v)).collect()
+        self.neighbors[u].iter().collect()
     }
 
     fn are_adjacent(&self, u:VertexId, v:VertexId) -> bool {
@@ -109,6 +108,10 @@ impl CGSHOPInstance {
                     res.neighbors[j].insert(i);
                 }
             }
+        }
+        // shrink bitsets
+        for i in 0..n {
+            res.neighbors[i].shrink_to_fit();
         }
         if res.preprocessed.is_none() {
             let degrees:Vec<usize> = (0..n).map(|i| res.neighbors[i].len()).collect();
