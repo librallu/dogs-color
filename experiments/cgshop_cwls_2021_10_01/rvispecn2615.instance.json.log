@@ -1,0 +1,39 @@
+printing solutions in: ./dogs-color/insts/cgshop22/rvispecn2615.instance.json.solution.json
+printing perfs in: ./dogs-color/insts/cgshop22/rvispecn2615.instance.json.perf.json
+
+CGSHOP Instance: compute neighbors...
+computing neighbors (0 / 2615)...
+computing neighbors (1000 / 2615)...
+computing neighbors (2000 / 2615)...
+3715       vertices
+2615       segments
+127        dominations
+=======================
+CGSHOP Instance: compute neighbors...
+computing neighbors (0 / 2615)...
+computing neighbors (1000 / 2615)...
+computing neighbors (2000 / 2615)...
+colored 1000 / 2615...
+colored 2000 / 2615...
+greedy found 45 colors in 0.089 seconds
+ time (s)      nb nodes       objective      
+---------------------------------------------
+  0.029                       45             
+  0.033        667.0          44             
+  0.037        1.7 k          43             
+  0.047        4.5 k          42             
+  0.133        27.5 k         41             
+  0.172        36.9 k         40             
+  0.507        90.5 k         39             
+  118.350      9.5 M          38             
+
+             nb generated        631.7 M
+              nb expanded        513.1 M
+               nb trashed           0.0 
+     avg branching factor           1.2 
+                  nb eval          16.0 
+                 nb guide        631.7 M
+        time searched (s)      71999.969
+      generated nodes / s          8.8 k
+        solutions created           0.0 
+invalid solution (reason: ConflictingEdge(83, 1192))

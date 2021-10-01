@@ -1,0 +1,55 @@
+printing solutions in: ./dogs-color/insts/cgshop22/sqrpecn3218.instance.json.solution.json
+printing perfs in: ./dogs-color/insts/cgshop22/sqrpecn3218.instance.json.perf.json
+
+CGSHOP Instance: compute neighbors...
+computing neighbors (0 / 3218)...
+computing neighbors (1000 / 3218)...
+computing neighbors (2000 / 3218)...
+computing neighbors (3000 / 3218)...
+4930       vertices
+3218       segments
+83         dominations
+=======================
+CGSHOP Instance: compute neighbors...
+computing neighbors (0 / 3218)...
+computing neighbors (1000 / 3218)...
+computing neighbors (2000 / 3218)...
+computing neighbors (3000 / 3218)...
+colored 1000 / 3218...
+colored 2000 / 3218...
+colored 3000 / 3218...
+greedy found 138 colors in 0.217 seconds
+ time (s)      nb nodes       objective      
+---------------------------------------------
+  0.094                       138            
+  0.095        54.0           137            
+  0.098        335.0          136            
+  0.106        1.0 k          135            
+  0.136        4.2 k          134            
+  0.143        4.8 k          133            
+  0.160        7.2 k          132            
+  0.170        8.2 k          131            
+  0.189        10.4 k         130            
+  0.202        11.7 k         129            
+  0.259        17.1 k         128            
+  0.291        20.4 k         127            
+  0.368        27.4 k         126            
+  0.482        37.1 k         125            
+  0.507        39.8 k         124            
+  1.106        83.7 k         123            
+  2.587        173.5 k        122            
+  3.994        254.3 k        121            
+  4.502        277.7 k        120            
+  12.227       620.2 k        119            
+  212.127      6.5 M          118            
+
+             nb generated        787.7 M
+              nb expanded        717.1 M
+               nb trashed           0.0 
+     avg branching factor           1.1 
+                  nb eval          42.0 
+                 nb guide        787.7 M
+        time searched (s)      71999.906
+      generated nodes / s         10.9 k
+        solutions created           0.0 
+invalid solution (reason: ConflictingEdge(385, 1297))
