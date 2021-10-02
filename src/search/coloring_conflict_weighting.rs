@@ -18,7 +18,7 @@ use crate::{
     util::export_results
 };
 
-type Weight = u32;
+type Weight = u16;
 
 /// models a decision within the local search.
 #[derive(Debug,Clone,Eq,PartialEq,Hash)]

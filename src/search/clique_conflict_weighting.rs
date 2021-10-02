@@ -2,14 +2,8 @@ use std::{cell::RefCell, rc::Rc};
 
 use bit_set::BitSet;
 
-use dogs::{
-    combinators::stats::StatTsCombinator,
-    metric_logger::MetricLogger,
-    search_algorithm::StoppingCriterion,
-    search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution},
-    tree_search::greedy::Greedy,
-    search_algorithm::SearchAlgorithm
-};
+use dogs::{combinators::{helper::tabu_tenure::TabuTenure, stats::StatTsCombinator}, metric_logger::MetricLogger, search_algorithm::SearchAlgorithm, search_algorithm::StoppingCriterion, search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution}, tree_search::greedy::Greedy};
+use rand::{Rng, prelude::ThreadRng};
 
 use crate::{
     color::{ColoringInstance, VertexId},
@@ -27,6 +21,57 @@ struct Node {
 }
 
 
+/** simple tabu tenure that stores the insertions of colors */
+#[derive(Debug,Clone)]
+pub struct CliqueSwapTenure {
+    /// tabu fixed size
+    l:usize,
+    /// tabu dynamic size
+    lambda: f64,
+    /// number of iterations since the beginning of the search
+    nb_iter: usize,
+    /// decisions[c]: last iteration in which vertex c was inserted
+    decisions: Vec<Option<usize>>,
+    /// random number generator
+    rng: ThreadRng,
+}
+
+impl TabuTenure<usize, usize> for CliqueSwapTenure {
+    fn insert(&mut self, _n:&usize, d:usize) {
+        self.decisions[d] = Some(self.nb_iter);
+        self.nb_iter += 1;
+    }
+
+    fn contains(&mut self, n:&usize, d:&usize) -> bool {
+        match self.decisions[*d] {
+            None => false,
+            Some(i) => {
+                let rand_l = self.rng.gen_range(0..=self.l);
+                let threshold = rand_l + (self.lambda * (*n as f64)) as usize;
+                threshold > self.nb_iter || i >= self.nb_iter - threshold
+            }
+        }
+    }
+}
+
+impl CliqueSwapTenure {
+    /** creates a tabu tenure given:
+     - l: fixed tabu size
+     - λ: variable tabu size
+     - n: nb vertices
+    */
+    pub fn new(l:usize, lambda: f64, n:usize) -> Self {
+        Self {
+            l, lambda,
+            nb_iter: 0,
+            decisions: vec![None ; n],
+            rng: rand::thread_rng(),
+        }
+    }
+}
+
+
+
 /** implements a conflict weighting local search */
 #[derive(Debug)]
 struct ConflictWeightingLocalSearch {
@@ -38,12 +83,13 @@ struct ConflictWeightingLocalSearch {
     current_sol:Vec<VertexId>,
     /// inside_clique[v] = true iff v is in the current "clique"
     inside_clique:BitSet,
-    /// nb_adj_clique[v] = number of vertices in the clique that v are adjacent to
-    nb_adj_clique:Vec<usize>,
-    /// weight_adj_clique[v] = total weight of edges absent with clique vertices
+    /// weight_adj_clique[v] = total weight of non-neighbors of v in the clique
     weight_adj_clique:Vec<Weight>,
     /// total weight of the candidate clique
     total_weight:Weight,
+    /// tabu tenure
+    tabu:CliqueSwapTenure,
+
 }
 
 impl ConflictWeightingLocalSearch {
@@ -56,13 +102,10 @@ impl ConflictWeightingLocalSearch {
         for v in sol {
             inside_clique.insert(*v);
         }
-        let mut nb_adj_clique = vec![0 ; n];
         let mut weight_adj_clique = vec![0 ; n];
         for u in sol {
             for v in inst.vertices().filter(|v| v!=u) {
-                if inst.are_adjacent(*u, v) {
-                    nb_adj_clique[v] += 1;
-                } else {
+                if !inst.are_adjacent(*u, v) {
                     weight_adj_clique[v] += 1;
                 }
             }
@@ -72,26 +115,48 @@ impl ConflictWeightingLocalSearch {
             weights: (0..n).map(|i| vec![1 ; i]).collect(),
             current_sol: sol.to_vec(),
             inside_clique,
-            nb_adj_clique,
             weight_adj_clique,
             total_weight:0,
+            tabu:CliqueSwapTenure::new(10, 0.6, n)
         }
     }
 
-    /// adds a vertex to the clique
-    fn add_vertex(&mut self, v:VertexId, increase_weights:bool) {
+    /// check the correctness of the weights
+    fn check_weight_correctness(&mut self) {
+        let mut total_weight:Weight = 0;
+        for u in self.inside_clique.iter() {
+            for v in self.inside_clique.iter().filter(|v| *v < u) {
+                if !self.inst.are_adjacent(u, v) {
+                    total_weight += self.get_weight(u, v);
+                }
+            }
+        }
+        assert_eq!(total_weight, self.total_weight);
+        // check neigh weights
+        let n = self.inst.nb_vertices();
+        let mut neigh_weights:Vec<Weight> = vec![0 ; n];
+        for u in self.inside_clique.iter() {
+            for v in self.inst.vertices().filter(|v| u!=*v && !self.inst.are_adjacent(u, *v)) {
+                neigh_weights[v] += self.get_weight(u, v);
+            }
+        }
+        for v in self.inst.vertices() {
+            assert_eq!(self.weight_adj_clique[v], neigh_weights[v],
+                "sum weight {}", v
+            );
+        }
+    }
+
+    /// adds a vertex v to the clique
+    fn add_vertex(&mut self, v:VertexId) {
         self.inside_clique.insert(v);
         for w in self.inst.vertices().filter(|w| *w!=v) {
-            if self.inst.are_adjacent(v, w) {
-                self.nb_adj_clique[w] += 1;
-            } else { // if not neighbors, update the weight of w
-                self.weight_adj_clique[w] += self.get_weight(v, w);
+            if !self.inst.are_adjacent(v, w) {
+                let weight = self.get_weight(v,w);
                 if self.inside_clique.contains(w) {
-                    if increase_weights {
-                        self.increase_weight(v, w);
-                    }
-                    self.total_weight += self.get_weight(v, w);
+                    self.total_weight += weight;
                 }
+                self.weight_adj_clique[w] += weight;
             }
         }
     }
@@ -99,30 +164,33 @@ impl ConflictWeightingLocalSearch {
     /// removes a vertex from the clique
     fn remove_vertex(&mut self, v:VertexId) {
         self.inside_clique.remove(v);
-        for w in self.inst.vertices() {
-            if self.inst.are_adjacent(v, w) {
-                self.nb_adj_clique[w] -= 1;
-                self.weight_adj_clique[w] -= self.get_weight(v, w);
-            } else if self.inside_clique.contains(w) {
-                self.total_weight -= self.get_weight(v, w);
+        for w in self.inst.vertices().filter(|w| *w!=v) {
+            if !self.inst.are_adjacent(v, w) {
+                let weight = self.get_weight(v, w);
+                self.weight_adj_clique[w] -= weight;
+                if self.inside_clique.contains(w) { // less conflicts in this case
+                    self.total_weight -= self.get_weight(v, w);
+                    // self.increase_weight(v, w);
+                }
             }
         }
     }
 
     /// add the vertex that has the maximum degree within the clique (break ties by degree)
     fn insert_new_vertex(&mut self) {
+        // update current solution
+        assert_eq!(self.total_weight, 0);
+        self.current_sol = self.inside_clique.iter().collect();
+        println!("current best objective: {}", self.current_sol.len());
         loop { // repeat until the new solution is infeasible
             // select v
             let v = self.inst.vertices()
-                .filter(|v| self.inside_clique.contains(*v))
-                .max_by(|a,b| {
-                    self.nb_adj_clique[*a].cmp(&self.nb_adj_clique[*b])
-                    .then_with(|| self.inst.degree(*a).cmp(&self.inst.degree(*b)))
-                }).unwrap();
+                .filter(|v| !self.inside_clique.contains(*v))
+                .max_by_key(|e| self.inst.degree(*e)).unwrap();
             // add v to the candidate clique & update data-structures
-            self.add_vertex(v, false);
+            self.add_vertex(v);
             // if the new solution is infeasible, stop, otherwise, update the best-known solution
-            if self.nb_adj_clique[v] == self.current_sol.len() {
+            if self.total_weight == 0 {
                 self.current_sol.push(v);
             } else {
                 break;
@@ -132,7 +200,7 @@ impl ConflictWeightingLocalSearch {
 
     /// applies a move (coloring a vertex with a color)
     fn commit(&mut self, node:&Node) {
-        self.add_vertex(node.vertex_in, true);
+        self.add_vertex(node.vertex_in);
         self.remove_vertex(node.vertex_out);
     }
 
@@ -169,35 +237,44 @@ impl SearchSpace<Node, i32> for ConflictWeightingLocalSearch {
             total_weight: 0,
         }
     }
-    fn bound(&mut self, _node: &Node) -> i32 { -(self.current_sol.len() as i32) }
+    fn bound(&mut self, _node: &Node) -> i32 { -1 - (self.current_sol.len() as i32) }
     fn goal(&mut self, n: &Node) -> bool { n.total_weight == 0 }
     fn g_cost(&mut self, _n: &Node) -> i32 { 0 }
 }
 
 impl TotalNeighborGeneration<Node> for ConflictWeightingLocalSearch {
     fn neighbors(&mut self, node: &mut Node) -> Vec<Node> {
+        println!("{:?}", node);
+        self.check_weight_correctness();
         if node.vertex_in != node.vertex_out { // if not a dummy decision, commit it
             self.commit(node);
         }
-        if self.goal(node) { // if no conflict, merge some colors
+        self.check_weight_correctness();
+        assert_eq!(node.total_weight, self.total_weight);
+        if self.goal(node) { // if no conflict, increase the clique size
             self.insert_new_vertex();
         }
+        // self.check_weight_correctness();
         // select the node with the largest weight inside the clique
         let u = self.inside_clique.iter().max_by(|u,v| {
             self.weight_adj_clique[*u].cmp(&self.weight_adj_clique[*v])
-                .then_with(|| self.inst.degree(*u).cmp(&self.inst.degree(*v)))
+                .then_with(|| self.inst.degree(*u).cmp(&self.inst.degree(*v)).reverse())
         }).unwrap();
         // select the node with the smallest weight outside the clique
-        let v = self.inst.vertices().filter(|v| !self.inside_clique.contains(*v))
+        let mut tabu_clone = self.tabu.clone();
+        let v = self.inst.vertices()
+            .filter(|v| !self.inside_clique.contains(*v) && !tabu_clone.contains(v, v))
             .min_by(|u,v| {
                 self.weight_adj_clique[*u].cmp(&self.weight_adj_clique[*v])
                     .then_with(|| self.inst.degree(*u).cmp(&self.inst.degree(*v)))
             }).unwrap();
         // return the swap
+        self.tabu.insert(&v, v);
         vec![Node {
             vertex_in:v,
             vertex_out:u,
-            total_weight:self.total_weight - self.weight_adj_clique[u] + self.weight_adj_clique[v]
+            total_weight:
+                self.total_weight + self.weight_adj_clique[v] - self.weight_adj_clique[u]
         }]
     }
 }
@@ -257,8 +334,9 @@ mod tests {
     #[test]
     fn test_cwls() {
         let inst = Rc::new(CGSHOPInstance::from_file(
-            "./insts/cgshop22/vispecn2518.instance.json"
-            // "./insts/cgshop22/reecn3382.instance.json"
+            // "./insts/cgshop22/vispecn2518.instance.json"
+            // "./insts/cgshop22/rvispecn6048.instance.json"
+            "./insts/cgshop22/reecn3382.instance.json"
             // "./insts/cgshop22/rvisp3499.instance.json"
             // "./insts/cgshop22/reecn9674.instance.json"
             // "./insts/cgshop22/reecn12588.instance.json"
