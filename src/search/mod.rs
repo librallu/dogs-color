@@ -21,6 +21,9 @@ pub mod coloring_conflict_weighting;
 /// conflict weighting local search for the clique problem
 pub mod clique_conflict_weighting;
 
+/// partial weighting local search for the clique problem
+pub mod clique_partial_weighting;
+
 /// Ejection chains. Removes the smallest color, and try to insert it to the minimum conflicting color.
 pub mod ejection_chains;
 

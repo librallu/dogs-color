@@ -1,9 +1,14 @@
 use std::{cell::RefCell, rc::Rc};
 
 use bit_set::BitSet;
-
-use dogs::{combinators::{helper::tabu_tenure::TabuTenure, stats::StatTsCombinator}, metric_logger::MetricLogger, search_algorithm::SearchAlgorithm, search_algorithm::StoppingCriterion, search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution}, tree_search::greedy::Greedy};
 use rand::{Rng, prelude::ThreadRng};
+
+use dogs::{
+    combinators::{helper::tabu_tenure::TabuTenure, stats::StatTsCombinator}, metric_logger::MetricLogger,
+    search_algorithm::SearchAlgorithm,
+    search_algorithm::StoppingCriterion,
+    search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution}, tree_search::greedy::Greedy
+};
 
 use crate::{
     color::{ColoringInstance, VertexId},
@@ -39,7 +44,6 @@ pub struct CliqueSwapTenure {
 impl TabuTenure<usize, usize> for CliqueSwapTenure {
     fn insert(&mut self, _n:&usize, d:usize) {
         self.decisions[d] = Some(self.nb_iter);
-        self.nb_iter += 1;
     }
 
     fn contains(&mut self, n:&usize, d:&usize) -> bool {
@@ -67,6 +71,11 @@ impl CliqueSwapTenure {
             decisions: vec![None ; n],
             rng: rand::thread_rng(),
         }
+    }
+
+    /// increases the number of iterations of the underlying search process
+    pub fn increase_iter(&mut self) {
+        self.nb_iter += 1;
     }
 }
 
@@ -122,7 +131,7 @@ impl ConflictWeightingLocalSearch {
     }
 
     /// check the correctness of the weights
-    fn check_weight_correctness(&mut self) {
+    fn check_weight_correctness(&mut self) -> (Weight, Vec<Weight>) {
         let mut total_weight:Weight = 0;
         for u in self.inside_clique.iter() {
             for v in self.inside_clique.iter().filter(|v| *v < u) {
@@ -145,6 +154,7 @@ impl ConflictWeightingLocalSearch {
                 "sum weight {}", v
             );
         }
+        (total_weight, neigh_weights)
     }
 
     /// adds a vertex v to the clique
@@ -169,8 +179,9 @@ impl ConflictWeightingLocalSearch {
                 let weight = self.get_weight(v, w);
                 self.weight_adj_clique[w] -= weight;
                 if self.inside_clique.contains(w) { // less conflicts in this case
-                    self.total_weight -= self.get_weight(v, w);
-                    // self.increase_weight(v, w);
+                    self.total_weight -= weight;
+                    self.increase_weight(v, w);
+                    self.weight_adj_clique[v] += 1; // now, v is more costly by 1
                 }
             }
         }
@@ -200,8 +211,8 @@ impl ConflictWeightingLocalSearch {
 
     /// applies a move (coloring a vertex with a color)
     fn commit(&mut self, node:&Node) {
-        self.add_vertex(node.vertex_in);
         self.remove_vertex(node.vertex_out);
+        self.add_vertex(node.vertex_in);
     }
 
     /// get the learned weight of an edge
@@ -244,21 +255,18 @@ impl SearchSpace<Node, i32> for ConflictWeightingLocalSearch {
 
 impl TotalNeighborGeneration<Node> for ConflictWeightingLocalSearch {
     fn neighbors(&mut self, node: &mut Node) -> Vec<Node> {
-        println!("{:?}", node);
         self.check_weight_correctness();
+        // println!("{:?}", node);
         if node.vertex_in != node.vertex_out { // if not a dummy decision, commit it
             self.commit(node);
         }
-        self.check_weight_correctness();
         assert_eq!(node.total_weight, self.total_weight);
         if self.goal(node) { // if no conflict, increase the clique size
             self.insert_new_vertex();
         }
-        // self.check_weight_correctness();
         // select the node with the largest weight inside the clique
         let u = self.inside_clique.iter().max_by(|u,v| {
             self.weight_adj_clique[*u].cmp(&self.weight_adj_clique[*v])
-                .then_with(|| self.inst.degree(*u).cmp(&self.inst.degree(*v)).reverse())
         }).unwrap();
         // select the node with the smallest weight outside the clique
         let mut tabu_clone = self.tabu.clone();
@@ -266,15 +274,17 @@ impl TotalNeighborGeneration<Node> for ConflictWeightingLocalSearch {
             .filter(|v| !self.inside_clique.contains(*v) && !tabu_clone.contains(v, v))
             .min_by(|u,v| {
                 self.weight_adj_clique[*u].cmp(&self.weight_adj_clique[*v])
-                    .then_with(|| self.inst.degree(*u).cmp(&self.inst.degree(*v)))
             }).unwrap();
         // return the swap
-        self.tabu.insert(&v, v);
+        // self.tabu.insert(&v, v);
+        // self.tabu.increase_iter();
+        // if u and v are not adjacent, do not count the cost of non-edge (u,v)
+        let cost_sync:Weight = if !self.inst.are_adjacent(u, v) { self.get_weight(u, v) } else { 0 };
         vec![Node {
             vertex_in:v,
             vertex_out:u,
             total_weight:
-                self.total_weight + self.weight_adj_clique[v] - self.weight_adj_clique[u]
+                self.total_weight + self.weight_adj_clique[v] - self.weight_adj_clique[u] - cost_sync
         }]
     }
 }
@@ -349,9 +359,10 @@ mod tests {
         let greedy_sol = greedy_clique(inst.clone());
         println!("initial solution: {}", greedy_sol.len());
         let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(30.);
-        clique_conflict_weighting(
+        let sol_ls = clique_conflict_weighting(
             inst, &greedy_sol, None, None , stopping_criterion
         );
+        println!("after ls: {}", sol_ls.len());
     }
 
 }
