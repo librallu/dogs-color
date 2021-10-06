@@ -134,31 +134,6 @@ impl PartialWeightingLocalSearch {
         }
     }
 
-    /// check the correctness of the weights
-    fn check_weight_correctness(&mut self) {
-        // check total weight
-        let mut total_weight:Weight = 0;
-        for u in self.inside_clique.iter() {
-            total_weight += self.get_weight(u);
-        }
-        assert_eq!(total_weight, self.total_weight);
-        // check weight_cost_inserting
-        let n = self.inst.nb_vertices();
-        let mut cost_inserting:Vec<Weight> = vec![0 ; n];
-        let mut nb_non_adj:Vec<usize> = vec![0 ; n];
-        for u in self.inside_clique.iter() {
-            for v in self.inst.vertices().filter(|v|*v!=u && !self.inst.are_adjacent(u, *v)) {
-                cost_inserting[v] += self.get_weight(u);
-                nb_non_adj[v] += 1;
-            }
-        }
-        // self.weight_cost_inserting = cost_inserting.clone();
-        for u in self.inst.vertices() {
-            assert_eq!(cost_inserting[u], self.weight_cost_inserting[u], "vertex {}", u);
-            assert_eq!(nb_non_adj[u], self.nb_non_adj_clique[u]);
-        }
-    }
-
     /// adds a vertex v to the clique
     fn add_vertex(&mut self, u:VertexId) {
         // remove non-neighbors of u from the clique
