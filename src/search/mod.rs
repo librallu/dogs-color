@@ -18,6 +18,9 @@ pub mod tabucol;
 /// conflict weighting local search for the vertex coloring problem
 pub mod coloring_conflict_weighting;
 
+/// partial weighting local search for the vertex coloring problem
+pub mod coloring_partial_weighting;
+
 /// conflict weighting local search for the clique problem
 pub mod clique_conflict_weighting;
 
