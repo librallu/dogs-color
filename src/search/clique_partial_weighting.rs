@@ -107,9 +107,8 @@ impl PartialWeightingLocalSearch {
 
     /// initializes the data-structure from an initial solution 
     fn initialize(inst:Rc<dyn ColoringInstance>, sol:&[VertexId]) -> Self {
+        // println!("{:?}", sol);
         let n = inst.nb_vertices();
-        // let weight_constant = Weight::MAX / n as Weight;
-        let weight_constant = 1_000;
         // build data-structures
         let mut inside_clique = BitSet::with_capacity(n);
         let mut weight_cost_inserting:Vec<Weight> = vec![0 ; n];
@@ -117,19 +116,19 @@ impl PartialWeightingLocalSearch {
         for v in sol {
             inside_clique.insert(*v);
             for u in inst.vertices().filter(|u| u!=v && !inst.are_adjacent(*u, *v)) {
-                weight_cost_inserting[u] += weight_constant;
+                weight_cost_inserting[u] += 1;
                 nb_non_adj_clique[u] += 1;
             }
         }
         Self {
             inst,
-            weights: vec![weight_constant ; n],
+            weights: vec![1 ; n],
             current_sol: sol.to_vec(),
             inside_clique,
-            total_weight:sol.len() as Weight * weight_constant,
+            total_weight:sol.len() as Weight,
             weight_cost_inserting,
             nb_non_adj_clique,
-            tabu:CliqueTenure::new(10, 0.2, n),
+            tabu:CliqueTenure::new(10, 0.6, n),
             nb_iter: 0,
         }
     }
@@ -149,14 +148,12 @@ impl PartialWeightingLocalSearch {
                         self.nb_non_adj_clique[w] -= 1;
                     }
                 }
-                // update weight of outgoing nodes
-                self.increase_weight(v);
             }
         }
         // insert u & update total weight
+        self.increase_weight(u);
         self.inside_clique.insert(u);
         let u_weight = self.get_weight(u);
-        self.inside_clique.insert(u);
         self.total_weight += u_weight;
         // for each vertex non-adjacent to u, increase its weight cost
         for v in self.inst.vertices().filter(|v| *v!=u) {
@@ -177,8 +174,30 @@ impl PartialWeightingLocalSearch {
         self.nb_iter += 1;
     }
 
+    fn check_weights(&self) {
+        let n = self.inst.nb_vertices();
+        // check total weight
+        let mut total_weight = 0;
+        // check weight_cost_inserting
+        let mut weight_cost_inserting = vec![0 ; n];
+        for u in self.inside_clique.iter() {
+            total_weight += self.get_weight(u);
+            for v in self.inst.vertices() {
+                if u!=v && !self.inst.are_adjacent(u, v) {
+                    weight_cost_inserting[v] += self.get_weight(u);
+                }
+            }
+        }
+        assert_eq!(total_weight, self.total_weight);
+        for (i,v) in weight_cost_inserting.iter().enumerate() {
+            assert_eq!(*v, self.weight_cost_inserting[i], "vertex {}", i);
+        }
+    }
+
     /// applies a move (coloring a vertex with a color)
     fn commit(&mut self, node:&Node) {
+        // println!("{:?}", node);
+        // self.check_weights();
         match node.vertex_in {
             None => {},
             Some(v) => {
@@ -187,6 +206,7 @@ impl PartialWeightingLocalSearch {
                 self.tabu.increase_iter();
             }
         };
+        // self.check_weights();
     }
 
     /// get the learned weight of an edge
@@ -194,13 +214,13 @@ impl PartialWeightingLocalSearch {
 
     /// increase the learned weight of an edge
     fn increase_weight(&mut self, u:VertexId) {
-        self.weights[u] -= 1;
+        self.weights[u] += 1;
     }
 }
 
 impl GuidedSpace<Node, i64> for PartialWeightingLocalSearch {
     fn guide(&mut self, node: &Node) -> i64 {
-        node.total_weight as i64
+        -(node.total_weight as i64)
     }
 }
 
@@ -224,16 +244,12 @@ impl SearchSpace<Node, i32> for PartialWeightingLocalSearch {
 
 impl TotalNeighborGeneration<Node> for PartialWeightingLocalSearch {
     fn neighbors(&mut self, node: &mut Node) -> Vec<Node> {
-        // self.check_weight_correctness();
-        // println!("{:?}", node);
         self.commit(node);
-        // self.check_weight_correctness();
-        assert_eq!(node.total_weight, self.total_weight);
         // iterate over vertices that are not inside the clique, and try to add them
         let mut res:Vec<Node> = Vec::new();
         for u in self.inst.vertices() {
             // if !self.inside_clique.contains(u) {
-            if !self.inside_clique.contains(u) && (res.is_empty() || !self.tabu.contains(&0, &u)) {
+            if !self.inside_clique.contains(u) && (res.is_empty() || !self.tabu.contains(&120, &u)) {
                 let u_node = Node {
                     vertex_in: Some(u),
                     total_weight:self.total_weight + self.get_weight(u)
@@ -241,7 +257,7 @@ impl TotalNeighborGeneration<Node> for PartialWeightingLocalSearch {
                 };
                 if res.is_empty() {
                     res.push(u_node);
-                } else if res[0].total_weight < u_node.total_weight {
+                } else if u_node.total_weight > res[0].total_weight {
                     res.clear();
                     res.push(u_node);
                 } else if res[0].total_weight == u_node.total_weight { res.push(u_node); }
@@ -308,87 +324,15 @@ mod tests {
             // "./insts/cgshop22/vispecn2518.instance.json"
             // "./insts/cgshop22/rvispecn6048.instance.json"
             // "./insts/cgshop22/rvispecn17968.instance.json"
-            "./insts/cgshop22/reecn3382.instance.json"
-            // "./insts/cgshop22/rvisp3499.instance.json"
-            // "./insts/cgshop22/reecn9674.instance.json"
-            // "./insts/cgshop22/reecn12588.instance.json"
-            // "./insts/cgshop22/reecn31126.instance.json"
-            // "./insts/cgshop22/reecn73116.instance.json"
-            // "./insts/cgshop22/rvispecn17968.instance.json"
-            // "./insts/cgshop_22_examples/visp_5K.instance.json"
-            // "./insts/cgshop_22_examples/sqrm_10K_5.instance.json"
-        ));
-        let greedy_sol = greedy_clique(inst.clone());
-        println!("initial solution: {}", greedy_sol.len());
-        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(300.);
-        let sol_ls = clique_partial_weighting(
-            inst, &greedy_sol, None, None , stopping_criterion
-        );
-        println!("after ls: {}", sol_ls.len());
-    }
-
-    #[test]
-    fn test_cwls2() {
-        let inst = Rc::new(CGSHOPInstance::from_file(
-            // "./insts/cgshop22/vispecn2518.instance.json"
-            // "./insts/cgshop22/rvispecn6048.instance.json"
-            // "./insts/cgshop22/rvispecn17968.instance.json"
-            // "./insts/cgshop22/reecn3382.instance.json"
-            // "./insts/cgshop22/rvisp3499.instance.json"
-            // "./insts/cgshop22/reecn9674.instance.json"
-            "./insts/cgshop22/reecn12588.instance.json"
-            // "./insts/cgshop22/reecn31126.instance.json"
-            // "./insts/cgshop22/reecn73116.instance.json"
-            // "./insts/cgshop_22_examples/visp_5K.instance.json"
-            // "./insts/cgshop_22_examples/sqrm_10K_5.instance.json"
-        ));
-        let greedy_sol = greedy_clique(inst.clone());
-        println!("initial solution: {}", greedy_sol.len());
-        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(300.);
-        let sol_ls = clique_partial_weighting(
-            inst, &greedy_sol, None, None , stopping_criterion
-        );
-        println!("after ls: {}", sol_ls.len());
-    }
-
-    #[test]
-    fn test_cwls3() {
-        let inst = Rc::new(CGSHOPInstance::from_file(
-            // "./insts/cgshop22/vispecn2518.instance.json"
-            // "./insts/cgshop22/rvispecn6048.instance.json"
-            // "./insts/cgshop22/rvispecn17968.instance.json"
             // "./insts/cgshop22/reecn3382.instance.json"
             // "./insts/cgshop22/rvisp3499.instance.json"
             // "./insts/cgshop22/reecn9674.instance.json"
             // "./insts/cgshop22/reecn12588.instance.json"
             // "./insts/cgshop22/reecn31126.instance.json"
             // "./insts/cgshop22/reecn73116.instance.json"
-            "./insts/cgshop_22_examples/visp_5K.instance.json"
-            // "./insts/cgshop_22_examples/sqrm_10K_5.instance.json"
-        ));
-        let greedy_sol = greedy_clique(inst.clone());
-        println!("initial solution: {}", greedy_sol.len());
-        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(300.);
-        let sol_ls = clique_partial_weighting(
-            inst, &greedy_sol, None, None , stopping_criterion
-        );
-        println!("after ls: {}", sol_ls.len());
-    }
-
-    #[test]
-    fn test_cwls4() {
-        let inst = Rc::new(CGSHOPInstance::from_file(
-            // "./insts/cgshop22/vispecn2518.instance.json"
-            // "./insts/cgshop22/rvispecn6048.instance.json"
-            // "./insts/cgshop22/rvispecn17968.instance.json"
-            // "./insts/cgshop22/reecn3382.instance.json"
-            // "./insts/cgshop22/rvisp3499.instance.json"
-            // "./insts/cgshop22/reecn9674.instance.json"
-            // "./insts/cgshop22/reecn12588.instance.json"
-            // "./insts/cgshop22/reecn31126.instance.json"
-            // "./insts/cgshop22/reecn73116.instance.json"
+            "./insts/cgshop22/sqrp12451.instance.json"
             // "./insts/cgshop_22_examples/visp_5K.instance.json"
-            "./insts/cgshop_22_examples/sqrm_10K_5.instance.json"
+            // "./insts/cgshop_22_examples/sqrm_10K_5.instance.json"
         ));
         let greedy_sol = greedy_clique(inst.clone());
         println!("initial solution: {}", greedy_sol.len());
