@@ -1,0 +1,2 @@
+solver,nb_instances,nb_better_bk,nb_strictly_better_bk,nb_proved_optimal
+coloring_pwls,225,225,225,0
