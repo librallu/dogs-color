@@ -409,12 +409,13 @@ mod tests {
             // "./insts/cgshop22/reecn25913.instance.json"
             // "./insts/cgshop22/reecn31126.instance.json"
             // "./insts/cgshop22/reecn73116.instance.json"
-            "./insts/cgshop22/rvispecn17968.instance.json"
+            // "./insts/cgshop22/rvispecn17968.instance.json"
             // "./insts/cgshop22/sqrp7730.instance.json"
             // "./insts/cgshop22/sqrpecn18520.instance.json"
             // "./insts/cgshop22/sqrpecn32073.instance.json"
             // "./insts/cgshop22/sqrp20166.instance.json"
             // "./insts/cgshop_22_examples/visp_5K.instance.json"
+            "./insts/cgshop_22_examples/visp_100K.instance.json"
             // "./insts/cgshop_22_examples/sqrm_10K_5.instance.json"
         ));
         let greedy_sol = greedy_dsatur(inst.clone(), false);
