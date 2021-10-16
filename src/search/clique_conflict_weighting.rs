@@ -127,32 +127,32 @@ impl ConflictWeightingLocalSearch {
         }
     }
 
-    /// check the correctness of the weights
-    fn check_weight_correctness(&mut self) -> (Weight, Vec<Weight>) {
-        let mut total_weight:Weight = 0;
-        for u in self.inside_clique.iter() {
-            for v in self.inside_clique.iter().filter(|v| *v < u) {
-                if !self.inst.are_adjacent(u, v) {
-                    total_weight += self.get_weight(u, v);
-                }
-            }
-        }
-        assert_eq!(total_weight, self.total_weight);
-        // check neigh weights
-        let n = self.inst.nb_vertices();
-        let mut neigh_weights:Vec<Weight> = vec![0 ; n];
-        for u in self.inside_clique.iter() {
-            for v in self.inst.vertices().filter(|v| u!=*v && !self.inst.are_adjacent(u, *v)) {
-                neigh_weights[v] += self.get_weight(u, v);
-            }
-        }
-        for v in self.inst.vertices() {
-            assert_eq!(self.weight_adj_clique[v], neigh_weights[v],
-                "sum weight {}", v
-            );
-        }
-        (total_weight, neigh_weights)
-    }
+    // /// check the correctness of the weights
+    // fn check_weight_correctness(&mut self) -> (Weight, Vec<Weight>) {
+    //     let mut total_weight:Weight = 0;
+    //     for u in self.inside_clique.iter() {
+    //         for v in self.inside_clique.iter().filter(|v| *v < u) {
+    //             if !self.inst.are_adjacent(u, v) {
+    //                 total_weight += self.get_weight(u, v);
+    //             }
+    //         }
+    //     }
+    //     assert_eq!(total_weight, self.total_weight);
+    //     // check neigh weights
+    //     let n = self.inst.nb_vertices();
+    //     let mut neigh_weights:Vec<Weight> = vec![0 ; n];
+    //     for u in self.inside_clique.iter() {
+    //         for v in self.inst.vertices().filter(|v| u!=*v && !self.inst.are_adjacent(u, *v)) {
+    //             neigh_weights[v] += self.get_weight(u, v);
+    //         }
+    //     }
+    //     for v in self.inst.vertices() {
+    //         assert_eq!(self.weight_adj_clique[v], neigh_weights[v],
+    //             "sum weight {}", v
+    //         );
+    //     }
+    //     (total_weight, neigh_weights)
+    // }
 
     /// adds a vertex v to the clique
     fn add_vertex(&mut self, v:VertexId) {
@@ -189,7 +189,7 @@ impl ConflictWeightingLocalSearch {
         // update current solution
         assert_eq!(self.total_weight, 0);
         self.current_sol = self.inside_clique.iter().collect();
-        println!("current best objective: {}", self.current_sol.len());
+        // println!("current best objective: {}", self.current_sol.len());
         loop { // repeat until the new solution is infeasible
             // select v
             let v = self.inst.vertices()
@@ -245,14 +245,14 @@ impl SearchSpace<Node, i32> for ConflictWeightingLocalSearch {
             total_weight: 0,
         }
     }
-    fn bound(&mut self, _node: &Node) -> i32 { -1 - (self.current_sol.len() as i32) }
+    fn bound(&mut self, _node: &Node) -> i32 { - (self.current_sol.len() as i32) }
     fn goal(&mut self, n: &Node) -> bool { n.total_weight == 0 }
     fn g_cost(&mut self, _n: &Node) -> i32 { 0 }
 }
 
 impl TotalNeighborGeneration<Node> for ConflictWeightingLocalSearch {
     fn neighbors(&mut self, node: &mut Node) -> Vec<Node> {
-        self.check_weight_correctness();
+        // self.check_weight_correctness();
         // println!("{:?}", node);
         if node.vertex_in != node.vertex_out { // if not a dummy decision, commit it
             self.commit(node);
@@ -344,7 +344,8 @@ mod tests {
         let inst = Rc::new(CGSHOPInstance::from_file(
             // "./insts/cgshop22/vispecn2518.instance.json"
             // "./insts/cgshop22/rvispecn6048.instance.json"
-            "./insts/cgshop22/reecn3382.instance.json"
+            "./insts/cgshop22/rvispecn13421.instance.json"
+            // "./insts/cgshop22/reecn3382.instance.json"
             // "./insts/cgshop22/rvisp3499.instance.json"
             // "./insts/cgshop22/reecn9674.instance.json"
             // "./insts/cgshop22/reecn12588.instance.json"
