@@ -383,7 +383,8 @@ stop:Stopping
         &solution,
         &stats,
         perf_filename,
-        sol_filename
+        sol_filename,
+        true
     );
     solution
 }

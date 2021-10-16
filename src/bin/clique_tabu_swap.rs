@@ -48,5 +48,5 @@ pub fn main() {
         if !in_clique.contains(e) { not_in_clique.push(e); }
     }
     let exportable_sol = vec![solution, not_in_clique];
-    export_results(instance, &exportable_sol, &stats, perf_file, sol_file);
+    export_results(instance, &exportable_sol, &stats, perf_file, sol_file, false);
 }

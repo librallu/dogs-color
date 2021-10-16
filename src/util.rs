@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use bit_set::BitSet;
 use clap::ArgMatches;
 use serde_json::Value;
 
@@ -52,7 +53,8 @@ pub fn export_results(
     solution:&[Vec<VertexId>],
     stats:&Value,
     perf_file:Option<String>,
-    sol_file:Option<String>
+    sol_file:Option<String>,
+    check_result:bool,
 ) {
     // export statistics and solution
     match perf_file {
@@ -71,13 +73,28 @@ pub fn export_results(
     match sol_file {
         None => {},
         Some(filename) => {
-            let checker_result = checker(instance.clone(), solution);
-            match checker_result {
-                crate::color::CheckerResult::Ok(_) => {},
-                // _ => { panic!("invalid solution (reason: {:?})", checker_result)}
-                _ => { println!("invalid solution (reason: {:?})", checker_result)}
-            };
+            if check_result {
+                let checker_result = checker(instance.clone(), solution);
+                match checker_result {
+                    crate::color::CheckerResult::Ok(_) => {},
+                    // _ => { panic!("invalid solution (reason: {:?})", checker_result)}
+                    _ => { println!("invalid solution (reason: {:?})", checker_result)}
+                };
+            }
             instance.write_solution(filename.as_str(), solution);
         }
     }
+}
+
+/// transforms a clique defined by a vector, to a clique defined by a vector of vector
+pub fn clique_vec_to_vecvec(sol:&[VertexId], n:usize) -> Vec<Vec<VertexId>> {
+    let mut res = vec![sol.to_vec()];
+    let mut inside_res:BitSet = BitSet::default();
+    for i in &res[0] { inside_res.insert(*i); }
+    let mut non_clique = Vec::new();
+    for i in 0..n {
+        if ! inside_res.contains(i) { non_clique.push(i); }
+    }
+    res.push(non_clique);
+    res
 }

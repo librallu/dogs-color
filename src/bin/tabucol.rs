@@ -53,5 +53,5 @@ pub fn main() {
     });
 
     // export results
-    export_results(instance, &solution, &stats, perf_file, sol_file);
+    export_results(instance, &solution, &stats, perf_file, sol_file, true);
 }

@@ -1,7 +1,7 @@
-name: pwls
+name: c_pwls
 version: "1.0"
 author: Luc Libralesso <libralesso.l@gmail.com>
-about: Partial Weighting Local Search
+about: Partial Weighting Local Search (Clique)
 args:
     - instance:
         long: instance

@@ -10,10 +10,7 @@ use dogs::{
     search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution}, tree_search::greedy::Greedy
 };
 
-use crate::{
-    color::{ColoringInstance, VertexId},
-    util::export_results
-};
+use crate::{color::{ColoringInstance, VertexId}, util::{clique_vec_to_vecvec, export_results}};
 
 type Weight = u32;
 
@@ -234,9 +231,9 @@ impl GuidedSpace<Node, i64> for ConflictWeightingLocalSearch {
     }
 }
 
-impl ToSolution<Node, Vec<VertexId>> for ConflictWeightingLocalSearch {
-    fn solution(&mut self, _: &mut Node) -> Vec<VertexId> {
-        self.current_sol.clone()
+impl ToSolution<Node, Vec<Vec<VertexId>>> for ConflictWeightingLocalSearch {
+    fn solution(&mut self, _: &mut Node) -> Vec<Vec<VertexId>> {
+        clique_vec_to_vecvec(&self.current_sol, self.inst.nb_vertices())
     }
 }
 
@@ -297,12 +294,12 @@ sol:&[VertexId],
 perf_filename:Option<String>,
 sol_filename:Option<String>,
 stop:Stopping
-) -> Vec<VertexId> {
-    let mut solution:Vec<VertexId> = sol.to_vec();
+) -> Vec<Vec<VertexId>> {
+    let mut solution:Vec<Vec<VertexId>> = clique_vec_to_vecvec(sol, inst.nb_vertices());
     let logger = Rc::new(MetricLogger::default());
     let space = Rc::new(RefCell::new(
         StatTsCombinator::new(
-            ConflictWeightingLocalSearch::initialize(inst.clone(), &solution),
+            ConflictWeightingLocalSearch::initialize(inst.clone(), sol),
         ).bind_logger(Rc::downgrade(&logger)),
     ));
     let mut ts = Greedy::new(space.clone());
@@ -324,10 +321,11 @@ stop:Stopping
     space.borrow_mut().json_statistics(&mut stats);
     export_results(
         inst,
-        &[solution.clone()],
+        &solution,
         &stats,
         perf_filename,
-        sol_filename
+        sol_filename,
+        false,
     );
     solution
 }

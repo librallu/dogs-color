@@ -14,10 +14,7 @@ use dogs::{
     search_space::{SearchSpace, TotalNeighborGeneration, GuidedSpace, ToSolution}, tree_search::greedy::Greedy
 };
 
-use crate::{
-    color::{ColoringInstance, VertexId},
-    util::export_results
-};
+use crate::{color::{ColoringInstance, VertexId}, util::{clique_vec_to_vecvec, export_results}};
 
 type Weight = u32;
 
@@ -185,12 +182,7 @@ impl PartialWeightingLocalSearch {
         }
         // if improving the current-best-known solution, update it
         if self.inside_clique.len() > self.current_sol.len() {
-            println!("new best solution: {}", self.inside_clique.len());
             self.current_sol = self.inside_clique.iter().collect();
-        }
-        if self.nb_iter % 10_000 == 0 {
-            println!("it: {:<15}\tweight:{:<15}\tsize:{:<15}",
-                self.nb_iter, self.total_weight, self.inside_clique.len());
         }
         self.nb_iter += 1;
     }
@@ -243,8 +235,10 @@ impl GuidedSpace<Node, i64> for PartialWeightingLocalSearch {
     fn guide(&mut self, node: &Node) -> i64 { -(node.total_weight as i64) }
 }
 
-impl ToSolution<Node, Vec<VertexId>> for PartialWeightingLocalSearch {
-    fn solution(&mut self, _: &mut Node) -> Vec<VertexId> { self.current_sol.clone() }
+impl ToSolution<Node, Vec<Vec<VertexId>>> for PartialWeightingLocalSearch {
+    fn solution(&mut self, _: &mut Node) -> Vec<Vec<VertexId>> {
+        clique_vec_to_vecvec(&self.current_sol, self.inst.nb_vertices())
+    }
 }
 
 impl SearchSpace<Node, i32> for PartialWeightingLocalSearch {
@@ -254,7 +248,7 @@ impl SearchSpace<Node, i32> for PartialWeightingLocalSearch {
             total_weight: self.total_weight,
         }
     }
-    fn bound(&mut self, _node: &Node) -> i32 { self.current_sol.len() as i32 }
+    fn bound(&mut self, _node: &Node) -> i32 { -(self.current_sol.len() as i32) }
     fn goal(&mut self, _n: &Node) -> bool { true } // every node is a feasible solution
     fn g_cost(&mut self, _n: &Node) -> i32 { 0 }
 }
@@ -294,12 +288,12 @@ pub fn clique_partial_weighting<Stopping:StoppingCriterion>(
     perf_filename:Option<String>,
     sol_filename:Option<String>,
     stop:Stopping
-) -> Vec<VertexId> {
-    let mut solution:Vec<VertexId> = sol.to_vec();
+) -> Vec<Vec<VertexId>> {
+    let mut solution:Vec<Vec<VertexId>> = clique_vec_to_vecvec(sol, inst.nb_vertices());
     let logger = Rc::new(MetricLogger::default());
     let space = Rc::new(RefCell::new(
         StatTsCombinator::new(
-            PartialWeightingLocalSearch::initialize(inst.clone(), &solution),
+            PartialWeightingLocalSearch::initialize(inst.clone(), &solution[0]),
         ).bind_logger(Rc::downgrade(&logger)),
     ));
     let mut ts = Greedy::new(space.clone());
@@ -320,10 +314,11 @@ pub fn clique_partial_weighting<Stopping:StoppingCriterion>(
     space.borrow_mut().json_statistics(&mut stats);
     export_results(
         inst,
-        &[solution.clone()],
+        &solution,
         &stats,
         perf_filename,
-        sol_filename
+        sol_filename,
+        false,
     );
     solution
 }

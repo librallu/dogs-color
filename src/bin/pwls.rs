@@ -14,7 +14,7 @@ use dogs_color::util::read_params;
 /** solves a coloring instance using a DSATUR greedy */
 pub fn main() {
     // parse arguments
-    let yaml = load_yaml!("cwls.yml");
+    let yaml = load_yaml!("pwls.yml");
     let main_args = App::from_yaml(yaml).get_matches();
     let (
         inst_filename,
