@@ -21,6 +21,9 @@ pub mod coloring_conflict_weighting;
 /// partial weighting local search for the vertex coloring problem
 pub mod coloring_partial_weighting;
 
+/// backtracking DSATUR for the vertex coloring problem
+pub mod coloring_dsatur_backtrack;
+
 /// conflict weighting local search for the clique problem
 pub mod clique_conflict_weighting;
 
