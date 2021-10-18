@@ -1,0 +1,72 @@
+printing solutions in: ./dogs-color/insts/cgshop22/rvisp15474.instance.json.solution.json
+printing perfs in: ./dogs-color/insts/cgshop22/rvisp15474.instance.json.perf.json
+
+CGSHOP Instance: compute neighbors...
+computing neighbors (0 / 15474)...
+computing neighbors (1000 / 15474)...
+computing neighbors (2000 / 15474)...
+computing neighbors (3000 / 15474)...
+computing neighbors (4000 / 15474)...
+computing neighbors (5000 / 15474)...
+computing neighbors (6000 / 15474)...
+computing neighbors (7000 / 15474)...
+computing neighbors (8000 / 15474)...
+computing neighbors (9000 / 15474)...
+computing neighbors (10000 / 15474)...
+computing neighbors (11000 / 15474)...
+computing neighbors (12000 / 15474)...
+computing neighbors (13000 / 15474)...
+computing neighbors (14000 / 15474)...
+computing neighbors (15000 / 15474)...
+201        vertices
+15474      segments
+7171       dominations
+=======================
+greedy clique: 40
+greedy found 40 vertices in 0.009 seconds
+ time (s)      nb expanded    nb generated   objective      
+------------------------------------------------------------
+  0.016                                      -40            
+  0.017        3.0            289.0          -41            
+  0.017        4.0            297.0          -42            
+  0.017        5.0            302.0          -43            
+  0.018        6.0            303.0          -44            
+  0.018        7.0            525.0          -45            
+  0.019        10.0           740.0          -46            
+  0.019        11.0           973.0          -47            
+  0.020        13.0           1.2 k          -48            
+  0.021        15.0           1.3 k          -49            
+  0.021        16.0           1.3 k          -50            
+  0.021        17.0           1.4 k          -51            
+  0.022        19.0           1.6 k          -52            
+  0.023        23.0           2.2 k          -53            
+  0.026        28.0           2.9 k          -54            
+  0.026        30.0           3.0 k          -55            
+  0.027        32.0           3.2 k          -56            
+  0.028        34.0           3.3 k          -57            
+  0.029        38.0           3.7 k          -58            
+  0.030        40.0           3.8 k          -59            
+  0.032        45.0           4.2 k          -60            
+  0.033        47.0           4.3 k          -61            
+  0.039        61.0           5.7 k          -62            
+  0.039        62.0           5.8 k          -63            
+  0.040        66.0           6.1 k          -64            
+  0.052        94.0           8.3 k          -65            
+  0.057        105.0          9.0 k          -66            
+  0.060        111.0          9.3 k          -67            
+  0.070        135.0          10.3 k         -68            
+  0.075        148.0          10.8 k         -69            
+  0.088        178.0          11.6 k         -70            
+  0.109        227.0          12.7 k         -71            
+  0.118        248.0          13.0 k         -72            
+  0.119        251.0          13.0 k         -73            
+  0.147        317.0          13.5 k         -74            
+  0.147        318.0          13.5 k         -75            
+  0.148        320.0          13.5 k         -76            
+  0.179        391.0          13.8 k         -77            
+  0.294        656.0          15.2 k         -78            
+  0.355        796.0          15.9 k         -79            
+  0.372        838.0          16.1 k         -80            
+  23.761       51.3 k         274.9 k        -81            
+  78.745       166.0 k        858.1 k        -82            
+  3570.577     7.0 M          36.0 M         -83            

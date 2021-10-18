@@ -1,0 +1,54 @@
+printing solutions in: ./dogs-color/insts/cgshop22/rvisp11339.instance.json.solution.json
+printing perfs in: ./dogs-color/insts/cgshop22/rvisp11339.instance.json.perf.json
+
+CGSHOP Instance: compute neighbors...
+computing neighbors (0 / 11339)...
+computing neighbors (1000 / 11339)...
+computing neighbors (2000 / 11339)...
+computing neighbors (3000 / 11339)...
+computing neighbors (4000 / 11339)...
+computing neighbors (5000 / 11339)...
+computing neighbors (6000 / 11339)...
+computing neighbors (7000 / 11339)...
+computing neighbors (8000 / 11339)...
+computing neighbors (9000 / 11339)...
+computing neighbors (10000 / 11339)...
+computing neighbors (11000 / 11339)...
+293        vertices
+11339      segments
+5428       dominations
+=======================
+greedy clique: 38
+greedy found 38 vertices in 0.005 seconds
+ time (s)      nb expanded    nb generated   objective      
+------------------------------------------------------------
+  0.010                                      -38            
+  0.011        6.0            781.0          -39            
+  0.012        8.0            793.0          -40            
+  0.012        9.0            795.0          -41            
+  0.012        10.0           927.0          -42            
+  0.013        13.0           1.2 k          -43            
+  0.014        18.0           1.6 k          -44            
+  0.018        30.0           2.6 k          -45            
+  0.025        54.0           4.6 k          -46            
+  0.026        60.0           4.9 k          -47            
+  0.028        67.0           5.3 k          -48            
+  0.031        77.0           5.9 k          -49            
+  0.033        85.0           6.4 k          -50            
+  0.035        90.0           6.7 k          -51            
+  0.037        100.0          7.2 k          -52            
+  0.038        104.0          7.4 k          -53            
+  0.039        105.0          7.4 k          -54            
+  0.039        108.0          7.5 k          -55            
+  0.040        110.0          7.6 k          -56            
+  0.042        117.0          7.8 k          -57            
+  0.083        260.0          9.9 k          -58            
+  0.084        266.0          9.9 k          -59            
+  0.088        279.0          10.0 k         -60            
+  0.269        902.0          13.3 k         -61            
+  0.284        955.0          13.5 k         -62            
+  0.596        2.0 k          18.7 k         -63            
+  0.609        2.0 k          18.9 k         -64            
+  1.756        5.7 k          35.4 k         -65            
+  26.763       82.3 k         391.7 k        -66            
+  1248.473     3.5 M          16.4 M         -67            

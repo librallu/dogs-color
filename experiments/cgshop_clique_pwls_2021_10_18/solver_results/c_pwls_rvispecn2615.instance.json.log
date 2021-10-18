@@ -1,0 +1,29 @@
+printing solutions in: ./dogs-color/insts/cgshop22/rvispecn2615.instance.json.solution.json
+printing perfs in: ./dogs-color/insts/cgshop22/rvispecn2615.instance.json.perf.json
+
+CGSHOP Instance: compute neighbors...
+computing neighbors (0 / 2615)...
+computing neighbors (1000 / 2615)...
+computing neighbors (2000 / 2615)...
+3715       vertices
+2615       segments
+127        dominations
+=======================
+greedy clique: 21
+greedy found 21 vertices in 0.001 seconds
+ time (s)      nb expanded    nb generated   objective      
+------------------------------------------------------------
+  0.001                                      -21            
+  0.001        3.0            16.0           -22            
+  0.001        4.0            24.0           -23            
+  0.001        10.0           68.0           -24            
+  0.001        12.0           79.0           -25            
+  0.001        14.0           87.0           -26            
+  0.002        16.0           90.0           -27            
+  0.002        17.0           95.0           -28            
+  0.002        25.0           121.0          -29            
+  0.003        37.0           188.0          -30            
+  0.076        1.4 k          2.9 k          -31            
+  0.086        1.6 k          3.2 k          -32            
+  0.087        1.6 k          3.3 k          -33            
+  0.193        3.6 k          6.7 k          -34            
