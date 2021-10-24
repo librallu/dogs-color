@@ -39,6 +39,12 @@ pub trait ColoringInstance:Debug {
 
     /// returns true if the vertex is dominated by some other
     fn is_dominated(&self, _:VertexId) -> bool { false }
+
+    /// returns a possible coloring
+    fn coloring(&self) -> Option<Vec<Vec<VertexId>>> { None }
+
+    /// returns a possible clique
+    fn clique(&self) -> Option<Vec<VertexId>> { None }
 }
 
 

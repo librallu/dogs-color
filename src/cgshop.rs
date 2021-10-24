@@ -54,6 +54,10 @@ pub struct CGSHOPInstance {
     dominated:BitSet,
     /// pre-processed data
     preprocessed: Option<PreprocessedData>,
+    /// best-so-far coloring
+    coloring: Option<CGSHOPSolution>,
+    /// best-so-far clique
+    clique: Option<CGSHOPSolution>,
 }
 
 
@@ -84,6 +88,32 @@ impl ColoringInstance for CGSHOPInstance {
     fn edges(&self) -> &[(VertexId, VertexId)] { todo!() }
 
     fn is_dominated(&self, v:VertexId) -> bool { self.dominated.contains(v) }
+
+    fn coloring(&self) -> Option<Vec<Vec<VertexId>>> {
+        match &self.coloring {
+            None => None,
+            Some(s) => {
+                let mut res:Vec<Vec<VertexId>> = vec![vec![] ; s.num_colors];
+                for (v,c) in s.colors.iter().enumerate() {
+                    res[*c].push(v);
+                }
+                Some(res)
+            }
+        }
+    }
+
+    fn clique(&self) -> Option<Vec<VertexId>> {
+        match &self.coloring {
+            None => None,
+            Some(s) => {
+                let mut res:Vec<VertexId> = Vec::new();
+                for (v,c) in s.colors.iter().enumerate() {
+                    if *c == 0 { res.push(v); }
+                }
+                Some(res)
+            }
+        }
+    }
 
 }
 
@@ -344,6 +374,15 @@ impl CGSHOPSolution {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_use_best_so_far() {
+        let inst = CGSHOPInstance::from_file(
+            "./insts/cgshop22/rvispecn17968.instance.json",
+        );
+        println!("clique len\t {}", inst.clique().unwrap().len());
+        println!("coloring len\t {}", inst.coloring().unwrap().len());
+    }
 
     #[test]
     fn colinear_with_same_point() {
