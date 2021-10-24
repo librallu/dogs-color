@@ -5,6 +5,7 @@ use clap::{App, load_yaml};
 use dogs::search_algorithm::TimeStoppingCriterion;
 
 use dogs_color::cgshop::CGSHOPInstance;
+use dogs_color::color::{CheckerResult, checker};
 use dogs_color::search::cgshop_aog::cgshop_aog;
 use dogs_color::search::coloring_partial_weighting::{coloring_partial_weighting};
 use dogs_color::search::greedy_dsatur::greedy_dsatur;
@@ -26,10 +27,6 @@ pub fn main() {
     ) = read_params(main_args);
     let time_init = Instant::now();
     // solve it
-    match instance.clique() {
-        None => {},
-        Some(c) => { println!("clique: {}", c.len()); }
-    }
     let initial_solution = match instance.coloring() {
         None => {
             let sol_greedy = match instance_type.as_str() {
@@ -51,6 +48,21 @@ pub fn main() {
         }
         Some(sol) => { sol }
     };
+    assert_eq!(
+        checker(instance.clone(), &initial_solution),
+        CheckerResult::Ok(initial_solution.len())
+    );
+    println!("initial coloring: {}", initial_solution.len());
+    match instance.clique() {
+        None => {},
+        Some(c) => {
+            println!("clique: {}", c.len());
+            if c.len() == initial_solution.len() {
+                println!("optimal solution is already found!");
+                return;
+            }
+        }
+    }
     coloring_partial_weighting(
         instance,
         &initial_solution,

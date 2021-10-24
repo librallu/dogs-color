@@ -103,7 +103,7 @@ impl ColoringInstance for CGSHOPInstance {
     }
 
     fn clique(&self) -> Option<Vec<VertexId>> {
-        match &self.coloring {
+        match &self.clique {
             None => None,
             Some(s) => {
                 let mut res:Vec<VertexId> = Vec::new();
