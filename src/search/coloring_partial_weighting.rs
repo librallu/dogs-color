@@ -114,6 +114,8 @@ struct PartialWeightingLocalSearch {
     aspiration_criterion:i64,
     /// number of iterations
     nb_iter:i64,
+    /// random number generator
+    rng:Rng,
 }
 
 impl PartialWeightingLocalSearch {
@@ -159,6 +161,7 @@ impl PartialWeightingLocalSearch {
             tabu: TabuColTenure::new(10, 0.01, n, nb_colors),
             aspiration_criterion: i64::MAX,
             nb_iter: 0,
+            rng: Rng::default(),
         }
     }
 
@@ -320,6 +323,19 @@ impl TotalNeighborGeneration<Node> for PartialWeightingLocalSearch {
                 nb_uncolored:self.uncolored_vertices.len()
             }
         ];
+        // if self.nb_iter % 30_000 == 0 {
+        //     // uncolor 10% of the vertices
+        //     println!("Before Kick: {}\t initial weight {}\t uncolored {}", self.nb_iter, self.total_weight, self.uncolored_vertices.len());
+        //     for v in self.inst.vertices() {
+        //         if !self.uncolored_vertices.contains(v) {
+        //             let r:i64 = self.rng.i64(0..10);
+        //             if r == 0 {
+        //                 self.uncolor_vertex(v);
+        //             }
+        //         }
+        //     }
+        //     println!("After Kick: {}\t initial weight {}\t uncolored {}", self.nb_iter, self.total_weight, self.uncolored_vertices.len());
+        // }
         // for every uncolored vertex, try a possible color
         for u in self.uncolored_vertices.iter() {
             for (c,_) in self.colors_vertex_number.iter().enumerate().filter(|(_,n)| **n > 0) {
