@@ -6,9 +6,9 @@ use dogs::search_algorithm::TimeStoppingCriterion;
 
 use dogs_color::color::{CheckerResult, checker};
 use dogs_color::cgshop::CGSHOPInstance;
-use dogs_color::search::cgshop_aog::cgshop_aog;
-use dogs_color::search::coloring_conflict_weighting::{coloring_conflict_weighting};
-use dogs_color::search::greedy_dsatur::greedy_dsatur;
+use dogs_color::solvers::cgshop::cgshop_aog::cgshop_aog;
+use dogs_color::solvers::coloring::conflict_weighting::{coloring_conflict_weighting};
+use dogs_color::solvers::coloring::greedy_dsatur::greedy_dsatur;
 use dogs_color::util::read_params;
 
 

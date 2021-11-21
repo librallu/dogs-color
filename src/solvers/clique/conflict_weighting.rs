@@ -337,7 +337,7 @@ mod tests {
 
     use dogs::search_algorithm::TimeStoppingCriterion;
     
-    use crate::{cgshop::CGSHOPInstance, search::clique_bnb::greedy_clique};
+    use crate::{cgshop::CGSHOPInstance, solvers::clique::bnb::greedy_clique};
 
     #[test]
     fn test_cwls() {

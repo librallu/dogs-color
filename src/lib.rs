@@ -28,5 +28,5 @@ pub mod cgshop;
 /// helper and utility methods for executables
 pub mod util;
 
-/// search spaces for the graph coloring problem
-pub mod search;
+/// solvers for the graph coloring problem and maximum clique problem
+pub mod solvers;

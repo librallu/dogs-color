@@ -45,6 +45,11 @@ pub trait ColoringInstance:Debug {
 
     /// returns a possible clique
     fn clique(&self) -> Option<Vec<VertexId>> { None }
+
+    /// returns the complementary graph (as an instance)
+    fn complementary(&self) -> Rc<dyn ColoringInstance> {
+        unimplemented!("ColoringInstance.complementary should be implemented by structs implementing the trait.")
+    }
 }
 
 

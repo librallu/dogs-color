@@ -5,7 +5,7 @@ use clap::{App, load_yaml};
 use serde_json::json;
 
 use dogs_color::cgshop::CGSHOPInstance;
-use dogs_color::search::cgshop_aog::cgshop_aog;
+use dogs_color::solvers::cgshop::cgshop_aog::cgshop_aog;
 use dogs_color::util::{read_params, export_results};
 
 

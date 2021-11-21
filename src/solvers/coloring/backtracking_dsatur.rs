@@ -261,8 +261,8 @@ mod tests {
     
     use crate::cgshop::CGSHOPInstance;
     use crate::dimacs::DimacsInstance;
-    use crate::search::clique_partial_weighting::clique_partial_weighting;
-    use crate::search::greedy_clique::greedy_clique;
+    use crate::solvers::clique::partial_weighting::clique_partial_weighting;
+    use crate::solvers::clique::greedy_clique::greedy_clique;
     
     #[test]
     fn test_simple() {

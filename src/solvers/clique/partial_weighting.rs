@@ -330,7 +330,7 @@ mod tests {
 
     use dogs::search_algorithm::TimeStoppingCriterion;
     
-    use crate::{cgshop::CGSHOPInstance, search::greedy_clique::greedy_clique};
+    use crate::{cgshop::CGSHOPInstance, solvers::clique::greedy_clique::greedy_clique};
 
     #[test]
     fn test_cwls() {
@@ -615,6 +615,43 @@ mod tests {
         let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(3600.);
         let sol_ls = clique_partial_weighting(
             inst, &greedy_sol, None, None , stopping_criterion
+        );
+        println!("after ls: {}", sol_ls.len());
+    }
+
+    #[test]
+    fn test_cwls_mis() {
+        let inst = Rc::new(CGSHOPInstance::from_file(
+            // "./insts/cgshop22/vispecn2518.instance.json"
+            "./insts/cgshop22/vispecn5478.instance.json"
+            // "./insts/cgshop22/vispecn13806.instance.json"
+            // "./insts/cgshop22/vispecn50715.instance.json"
+            // "./insts/cgshop22/rvispecn6048.instance.json"
+            // "./insts/cgshop22/rvispecn17968.instance.json"
+            // "./insts/cgshop22/reecn3382.instance.json"
+            // "./insts/cgshop22/visp26405.instance.json"
+            // "./insts/cgshop22/rvisp3499.instance.json"
+            // "./insts/cgshop22/rvisp14562.instance.json"
+            // "./insts/cgshop22/reecn9674.instance.json"
+            // "./insts/cgshop22/reecn12588.instance.json"
+            // "./insts/cgshop22/reecn25913.instance.json"
+            // "./insts/cgshop22/reecn31126.instance.json"
+            // "./insts/cgshop22/reecn58325.instance.json"
+            // "./insts/cgshop22/reecn73116.instance.json"
+            // "./insts/cgshop22/sqrp12451.instance.json"
+            // "./insts/cgshop_22_examples/visp_5K.instance.json"
+            // "./insts/cgshop_22_examples/visp_50K.instance.json"
+            // "./insts/cgshop_22_examples/visp_100K.instance.json"
+            // "./insts/cgshop_22_examples/sqrm_50K_6.instance.json"
+        ));
+        let inst_comp = inst.complementary();
+        println!("complementary instance computed.");
+        inst_comp.display_statistics();
+        let greedy_sol = greedy_clique(inst_comp.clone());
+        println!("initial solution: {}", greedy_sol.len());
+        let stopping_criterion:TimeStoppingCriterion = TimeStoppingCriterion::new(36000.);
+        let sol_ls = clique_partial_weighting(
+            inst_comp, &greedy_sol, None, None , stopping_criterion
         );
         println!("after ls: {}", sol_ls.len());
     }

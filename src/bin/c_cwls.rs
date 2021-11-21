@@ -3,7 +3,7 @@ use std::time::Instant;
 use clap::{App, load_yaml};
 use dogs::search_algorithm::TimeStoppingCriterion;
 
-use dogs_color::solvers::clique::partial_weighting::{clique_partial_weighting};
+use dogs_color::solvers::clique::conflict_weighting::{clique_conflict_weighting};
 use dogs_color::solvers::clique::greedy_clique::greedy_clique;
 use dogs_color::util::read_params;
 
@@ -25,7 +25,7 @@ pub fn main() {
     // solve it
     let sol_greedy = greedy_clique(instance.clone());
     println!("greedy found {} vertices in {:.3} seconds", sol_greedy.len(), time_init.elapsed().as_secs_f32());
-    clique_partial_weighting(
+    clique_conflict_weighting(
         instance,
         &sol_greedy,
         perf_file,

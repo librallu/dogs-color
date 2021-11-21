@@ -3,7 +3,7 @@ use std::time::Instant;
 use clap::{App, load_yaml};
 use serde_json::json;
 
-use dogs_color::search::greedy_rlf::greedy_rlf;
+use dogs_color::solvers::coloring::greedy_rlf::greedy_rlf;
 use dogs_color::util::{read_params, export_results};
 
 

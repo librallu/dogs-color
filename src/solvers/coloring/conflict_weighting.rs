@@ -407,7 +407,7 @@ mod tests {
 
     use dogs::search_algorithm::TimeStoppingCriterion;
     
-    use crate::{cgshop::CGSHOPInstance, search::greedy_dsatur::greedy_dsatur};
+    use crate::{cgshop::CGSHOPInstance, solvers::coloring::greedy_dsatur::greedy_dsatur};
 
     #[test]
     fn test_cwls() {

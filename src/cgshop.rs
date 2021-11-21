@@ -8,6 +8,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Write};
 use std::cmp::{max, min};
+use std::rc::Rc;
 use bit_set::BitSet;
 use serde::{Serialize, Deserialize};
 
@@ -77,7 +78,14 @@ impl ColoringInstance for CGSHOPInstance {
     fn display_statistics(&self) {
         println!("{:<10} vertices", self.n());
         println!("{:<10} segments", self.m());
-        println!("{:<10} dominations", self.preprocessed.as_ref().unwrap().dominations.len());
+        match self.preprocessed.as_ref() {
+            None => {
+                println!("no preprocessing");
+            },
+            Some(v) => {
+                println!("{:<10} dominations", v.dominations.len());
+            }
+        }
     }
 
     fn write_solution(&self, filename:&str, solution:&[Vec<usize>]) {
@@ -113,6 +121,33 @@ impl ColoringInstance for CGSHOPInstance {
                 Some(res)
             }
         }
+    }
+
+    fn complementary(&self) -> std::rc::Rc<dyn ColoringInstance> {
+        let mut res = self.clone();
+        let mut degrees = vec![0 ; self.nb_vertices()];
+        // invert the neighbors
+        let vertices = self.vertices().collect::<Vec<VertexId>>();
+        for u in vertices.iter() {
+            for v in vertices.iter() {
+                if u == v { continue; }
+                if res.neighbors[*u].contains(*v) {
+                    res.neighbors[*u].remove(*v);
+                } else {
+                    res.neighbors[*u].insert(*v);
+                    degrees[*u] += 1;
+                    degrees[*v] += 1;
+                }
+            }
+        }
+        res.dominated = BitSet::default();
+        res.coloring = None;
+        res.clique = None;
+        res.preprocessed = Some(PreprocessedData {
+            degrees,
+            dominations: Vec::new(),
+        });
+        Rc::new(res)
     }
 
 }
