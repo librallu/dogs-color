@@ -1,0 +1,33 @@
+{
+    "experiment_name":   "dimacs_bench",
+    "nb_parallel_tasks": 4,
+    "fallback_threads": 4,
+    "instance_list":     "../insts/dimacs.csv",
+    "output_prefix":     ".",
+    "solvers": [
+        {
+            "name": "cwls",
+            "exe_path": "../target/release/cwls",
+            "params": [
+                {"name":"instance", "values":["#{instance_path}"]},
+                {"name":"time",     "values":["#{time_limit}"]},
+                {"name":"perf",     "values":["#{file_prefix}.stats.json"]},
+                {"name":"solution", "values":["#{file_prefix}.sol"]},
+                {"name":"type",     "values":["dimacs"]}
+            ]
+        },
+        {
+            "name": "pwls",
+            "exe_path": "../target/release/pwls",
+            "params": [
+                {"name":"instance", "values":["#{instance_path}"]},
+                {"name":"time",     "values":["#{time_limit}"]},
+                {"name":"perf",     "values":["#{file_prefix}.stats.json"]},
+                {"name":"solution", "values":["#{file_prefix}.sol"]},
+                {"name":"type",     "values":["dimacs"]}
+            ]
+        }
+    ],
+    "analysis": {
+    }
+}
